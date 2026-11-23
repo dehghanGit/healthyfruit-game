@@ -49,7 +49,7 @@ export class GameEngine {
 
         // سیستم کومبو (برش همزمان چند غذا در یک ضربه)
         this.activeCombo = 0;
-        this.comboResetTimer = null;
+        this.lastComboCutTime = null;
 
         // ابعاد فیزیک صفحه
         this.width = window.innerWidth;
@@ -100,6 +100,7 @@ export class GameEngine {
             this.bladeTrail = [];
             this.lastPointer = null;
             this.isPointerDown = false;
+            this.resetCombo();
             this.particles.clear();
         }
     }
@@ -157,7 +158,10 @@ export class GameEngine {
     }
 
     bindEvents() {
+        let activeTouchId = null;
         document.addEventListener('visibilitychange', () => {
+            activeTouchId = null;
+            this.resetCombo();
             this.isPointerDown = false;
             this.lastPointer = null;
             this.bladeTrail = [];
@@ -181,6 +185,7 @@ export class GameEngine {
         // پشتیبانی کامل از ماوس و صفحات لمسی (Touch)
         const onPointerDown = (e) => {
             sounds.ensureContext();
+            this.resetCombo();
             this.isPointerDown = true;
             const pos = this.getCanvasPos(e);
             this.bladeTrail = [{ x: pos.x, y: pos.y, time: performance.now() }];
@@ -219,14 +224,16 @@ export class GameEngine {
         };
 
         const onPointerUp = () => {
+            activeTouchId = null;
+            this.resetCombo();
             this.isPointerDown = false;
             this.lastPointer = null;
         };
 
         // ماوس
-        this.canvas.addEventListener('mousedown', onPointerDown);
-        window.addEventListener('mousemove', onPointerMove);
-        window.addEventListener('mouseup', onPointerUp);
+        this.canvas.addEventListener('mousedown', e => { if (activeTouchId === null) onPointerDown(e); });
+        window.addEventListener('mousemove', e => { if (activeTouchId === null) onPointerMove(e); });
+        window.addEventListener('mouseup', () => { if (activeTouchId === null) onPointerUp(); });
         window.addEventListener('blur', () => {
             onPointerUp();
             this.bladeTrail = [];
@@ -234,19 +241,23 @@ export class GameEngine {
 
         // لمسی (Mobile/Tablet)
         this.canvas.addEventListener('touchstart', (e) => {
-            if (e.touches.length > 0) {
-                onPointerDown(e.touches[0]);
+            if (activeTouchId === null && e.touches.length > 0) {
+                const touch = e.touches[0];
+                activeTouchId = touch.identifier;
+                onPointerDown(touch);
             }
         }, { passive: false });
 
         window.addEventListener('touchmove', (e) => {
-            if (e.touches.length > 0) {
-                onPointerMove(e.touches[0]);
-            }
+            const touch = Array.from(e.touches).find(touch => touch.identifier === activeTouchId);
+            if (touch) onPointerMove(touch);
         }, { passive: false });
 
-        window.addEventListener('touchend', onPointerUp);
-        window.addEventListener('touchcancel', onPointerUp);
+        const onTouchEnd = e => {
+            if (!Array.from(e.touches).some(touch => touch.identifier === activeTouchId)) onPointerUp();
+        };
+        window.addEventListener('touchend', onTouchEnd);
+        window.addEventListener('touchcancel', onTouchEnd);
     }
 
     getCanvasPos(e) {
@@ -333,24 +344,35 @@ export class GameEngine {
         this.foods.splice(index, 1);
     }
 
+    resetCombo() {
+        this.activeCombo = 0;
+        this.lastComboCutTime = null;
+    }
+
     // برش غذای سالم: امتیاز، آبمیوه، کومبو
     handleHealthyCut(food, sliceAngle, swipeVector) {
         if (this.state !== 'PLAYING') return;
         sounds.playCutHealthy();
         this.particles.createJuiceSplash(food.x, food.y, food.data.splashColors, sliceAngle, 16);
         this.healthyCuts++;
-        this.activeCombo++;
+        const now = performance.now();
+        if (!this.isPointerDown || (this.lastComboCutTime !== null && now - this.lastComboCutTime >= 300)) {
+            this.resetCombo();
+        }
+        if (this.isPointerDown) {
+            this.activeCombo++;
+            this.lastComboCutTime = now;
+        }
         this.score += 1;
 
-        // Each threshold pays once per uninterrupted sequence of healthy cuts.
-        const bonus = ({ 5: 3, 10: 5, 20: 10 })[this.activeCombo] || 0;
+        // One continuous swipe: 3 cuts award +1, the fourth +2, fifth +3, etc.
+        const bonus = Math.max(0, this.activeCombo - 2);
         if (bonus) {
             this.score += bonus;
             this.bonusYears += bonus;
             sounds.playCombo(this.activeCombo);
-            const title = this.activeCombo === 5 ? 'کومبو' : this.activeCombo === 10 ? 'کومبوی دوگانه' : 'استاد زندگی';
             this.particles.addFloatingText(this.width / 2, this.height * 0.4,
-                `${title}! +${toPersianDigits(bonus)} سال`, '#ffca28', 28, true);
+                `کومبو ×${toPersianDigits(this.activeCombo)}! +${toPersianDigits(bonus)} سال`, '#ffca28', 28, true);
         }
         this.particles.addFloatingText(food.x, food.y, '+۱ سال', '#81c784', 24);
         this.ui.updateScore(this.score);
@@ -374,7 +396,7 @@ export class GameEngine {
         this.lossHistory.push({ food: food.data.nameFa, ...risk });
         this.score -= 2;
         this.hearts = Math.max(0, this.hearts - 1);
-        this.activeCombo = 0;
+        this.resetCombo();
         this.ui.updateScore(this.score);
         this.ui.updateHearts(this.hearts);
         this.particles.addFloatingText(food.x, food.y - 30,
@@ -517,7 +539,7 @@ export class GameEngine {
 
     returnToStart() {
         this.state = 'START';
-        clearTimeout(this.comboResetTimer);
+        this.resetCombo();
         this.particles.clear();
         this.bladeTrail = [];
         this.lastPointer = null;
@@ -540,8 +562,7 @@ export class GameEngine {
         this.halves = [];
         this.particles.clear();
         this.spawnTimer = 0;
-        this.activeCombo = 0;
-        clearTimeout(this.comboResetTimer);
+        this.resetCombo();
         this.bladeTrail = [];
         this.screenShake = 0;
 
@@ -553,6 +574,7 @@ export class GameEngine {
     pauseGame() {
         if (this.state === 'PLAYING') {
             this.state = 'PAUSED';
+            this.resetCombo();
             this.isPointerDown = false;
             this.lastPointer = null;
             this.bladeTrail = [];
@@ -571,6 +593,7 @@ export class GameEngine {
     triggerGameOver() {
         if (this.state === 'GAMEOVER') return;
         this.state = 'GAMEOVER';
+        this.resetCombo();
         this.screenShake = 0;
         this.isPointerDown = false;
         this.lastPointer = null;
@@ -607,6 +630,7 @@ export class GameEngine {
 
         // پاکسازی مسیر قدیمی رد شمشیر
         const now = performance.now();
+        if (this.lastComboCutTime !== null && now - this.lastComboCutTime >= 300) this.resetCombo();
         this.bladeTrail = this.bladeTrail.filter(p => now - p.time < 170);
 
         // بروزرسانی غذاهای در حال پرواز

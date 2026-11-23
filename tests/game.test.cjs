@@ -6,11 +6,12 @@ const vm = require('node:vm');
 const source = fs.readFileSync(path.join(__dirname, '../js/game-app.js'), 'utf8')
     .replace(/\}\)\(\);\s*$/, 'globalThis.classes = {GameEngine, FOOD_DATABASE, sounds};})();');
 const storage = new Map();
+let now = 0;
 const env = {
     document: { addEventListener() {} },
     window: { innerWidth: 1280, innerHeight: 720, devicePixelRatio: 2 },
     localStorage: { getItem: key => storage.get(key), setItem: (key, value) => storage.set(key, value) },
-    performance: { now: () => 0 }, setTimeout, clearTimeout, console
+    performance: { now: () => now }, setTimeout, clearTimeout, console
 };
 vm.runInNewContext(source, env);
 const { GameEngine, FOOD_DATABASE, sounds } = env.classes;
@@ -33,38 +34,41 @@ const soda = food(FOOD_DATABASE.unhealthy.find(f => f.id === 'soda'), 'unhealthy
 const cutGood = () => game.handleHealthyCut(good, 0, { x: 1, y: 0 });
 const cutBad = () => game.handleUnhealthyCut(soda, 0, { x: 1, y: 0 });
 game.startGame();
+game.isPointerDown = true;
 assert.equal(game.score, 10);
-for (let i = 0; i < 5; i++) cutGood();
-assert.equal(game.score, 18, '5 cuts: five base years plus one +3 bonus');
-for (let i = 5; i < 10; i++) cutGood();
-assert.equal(game.score, 28, '10 cuts: one additional +5 bonus');
-for (let i = 10; i < 20; i++) cutGood();
-assert.equal(game.score, 48, '20 cuts: one additional +10 bonus');
-for (let i = 20; i < 25; i++) cutGood();
-assert.equal(game.score, 53, 'no repeated milestone bonus at 25');
-assert.equal(game.bonusYears, 18);
+cutGood(); cutGood();
+assert.equal(game.score, 12, 'first two cuts earn only base points');
+now += 100; cutGood();
+assert.equal(game.score, 14, 'third cut adds one bonus year');
+now += 100; cutGood();
+assert.equal(game.score, 17, 'fourth cut adds two more bonus years');
+now += 100; cutGood();
+assert.equal(game.score, 21, 'fifth cut adds three more bonus years');
+assert.equal(game.bonusYears, 6);
 game.pauseGame();
 cutGood(); cutBad();
-assert.equal(game.score, 53, 'paused cuts cannot change years');
+assert.equal(game.score, 21, 'paused cuts cannot change years');
+assert.equal(game.activeCombo, 0, 'pausing breaks the swipe chain');
 game.resumeGame();
 cutBad();
-assert.equal(game.score, 51);
+assert.equal(game.score, 19);
 assert.equal(game.hearts, 4);
 assert.equal(game.activeCombo, 0);
 assert.match(warnings[0], /دیابت/);
-for (let i = 0; i < 5; i++) cutGood();
-assert.equal(game.score, 59, 'new streak can earn its own +3 bonus');
+game.isPointerDown = true;
+for (let i = 0; i < 5; i++) { now += 100; cutGood(); }
+assert.equal(game.score, 30, 'new swipe chain earns its own bonuses');
 for (let i = 0; i < 4; i++) cutBad();
 assert.equal(game.state, 'GAMEOVER');
-assert.equal(result.score, 51);
+assert.equal(result.score, 22);
 assert.equal(result.lossHistory.length, 5);
-assert.equal(result.healthyCuts, 30);
-assert.equal(result.bonusYears, 21);
+assert.equal(result.healthyCuts, 10);
+assert.equal(result.bonusYears, 12);
 assert.equal(result.isNewRecord, true, 'a run that beats the previous record earns the badge');
 assert.equal(result.score, result.baseYears + result.healthyCuts + result.bonusYears - 10);
 assert.notEqual(warnings[0], warnings[1], 'repeated foods cycle through reasons');
 cutBad(); cutGood();
-assert.equal(game.score, 51, 'game-over cuts cannot alter the final result');
+assert.equal(game.score, 22, 'game-over cuts cannot alter the final result');
 game.startGame();
 assert.equal(game.score, 10);
 assert.equal(game.hearts, 5);
@@ -73,7 +77,30 @@ assert.equal(game.healthyCuts, 0);
 assert.equal(game.bonusYears, 0);
 assert.equal(game.lossHistory.length, 0);
 assert.equal(game.riskCounts.size, 0);
-assert.equal(game.highScore, 59);
+assert.equal(game.highScore, 30);
+
+// Strict timing uses a monotonic clock and is checked at the cut itself, so a
+// delayed animation frame cannot keep an expired chain alive.
+game.isPointerDown = true;
+cutGood();
+now += 299; cutGood();
+now += 299; cutGood();
+assert.equal(game.activeCombo, 3);
+assert.equal(game.bonusYears, 1, '299ms gaps qualify even when the whole swipe exceeds 300ms');
+now += 300; cutGood();
+assert.equal(game.activeCombo, 1, 'exactly 300ms breaks the chain');
+assert.equal(game.bonusYears, 1);
+now += 301; cutGood();
+assert.equal(game.activeCombo, 1, 'more than 300ms also breaks the chain');
+cutGood(); cutGood();
+assert.equal(game.bonusYears, 2, 'multiple fruit hit in one frame qualify');
+now += 300;
+game.update(0);
+assert.equal(game.activeCombo, 0, 'expired chains reset even without another cut');
+game.isPointerDown = false;
+cutGood(); cutGood(); cutGood();
+assert.equal(game.activeCombo, 0, 'cuts outside a held gesture cannot earn combos');
+assert.equal(game.bonusYears, 2);
 for (const data of FOOD_DATABASE.healthy) assert.equal(data.points, 1);
 for (const data of [...FOOD_DATABASE.healthy, ...FOOD_DATABASE.unhealthy]) {
     assert.ok(fs.existsSync(path.resolve(__dirname, '..', data.image)), `missing image: ${data.id}`);
@@ -154,7 +181,7 @@ for (const [width, height] of [[320, 568], [360, 800], [390, 844], [430, 932], [
     }
 }
 game.spawnWave = originalSpawnWave;
-console.log('Passed: milestone rewards, streak reset, penalties, warning rotation, all five losses, final accounting, pause and restart.');
+console.log('Passed: same-swipe combo rewards, strict 300ms boundary, idle expiry, penalties, final accounting, pause and restart.');
 console.log('Passed: gradual flight-speed ramp and cap, portrait/landscape trajectories, reaction time, safe bounds and 30/60/120Hz motion.');
 
 // A blank cached background (for example after GPU eviction) must still erase
@@ -191,6 +218,7 @@ env.document.addEventListener = (name, fn) => documentEvents.set(name, fn);
 env.window.addEventListener = (name, fn) => windowEvents.set(name, fn);
 const lifecycle = new TestGame({
     getContext: () => ctx,
+    getBoundingClientRect: () => ({ left: 0, top: 0 }),
     addEventListener: (name, fn) => canvasEvents.set(name, fn)
 }, ui);
 GameEngine.prototype.bindEvents.call(lifecycle);
@@ -220,3 +248,39 @@ windowEvents.get('blur')();
 assert.equal(lifecycle.isPointerDown, false);
 assert.equal(lifecycle.bladeTrail.length, 0);
 console.log('Passed: full-frame erasure with a blank background, hidden-tab pause, canvas recovery and lost-focus swipe reset.');
+
+sounds.ensureContext = () => {};
+lifecycle.startGame();
+const mouse = { clientX: 10, clientY: 10 };
+const gestureCut = () => lifecycle.handleHealthyCut(good, 0, { x: 1, y: 0 });
+canvasEvents.get('mousedown')(mouse);
+gestureCut(); gestureCut(); gestureCut();
+assert.equal(lifecycle.bonusYears, 1);
+windowEvents.get('mouseup')();
+assert.equal(lifecycle.activeCombo, 0, 'mouse release breaks the chain immediately');
+canvasEvents.get('mousedown')(mouse);
+gestureCut(); gestureCut();
+assert.equal(lifecycle.bonusYears, 1, 'a new mouse swipe cannot continue the previous combo');
+windowEvents.get('mouseup')();
+
+const firstFinger = { identifier: 1, clientX: 10, clientY: 10 };
+const secondFinger = { identifier: 2, clientX: 100, clientY: 100 };
+canvasEvents.get('touchstart')({ touches: [firstFinger] });
+gestureCut(); gestureCut();
+canvasEvents.get('touchstart')({ touches: [firstFinger, secondFinger] });
+assert.equal(lifecycle.activeCombo, 2, 'a second finger does not restart the active swipe');
+windowEvents.get('touchmove')({ touches: [secondFinger] });
+assert.equal(lifecycle.lastPointer.x, 10, 'another finger cannot extend the swipe trail');
+windowEvents.get('touchend')({ touches: [firstFinger] });
+assert.equal(lifecycle.activeCombo, 2, 'lifting another finger leaves the active swipe intact');
+gestureCut();
+assert.equal(lifecycle.bonusYears, 2, 'the same tracked touch can complete a combo');
+windowEvents.get('touchend')({ touches: [] });
+assert.equal(lifecycle.activeCombo, 0);
+canvasEvents.get('touchstart')({ touches: [secondFinger] });
+gestureCut(); gestureCut();
+assert.equal(lifecycle.bonusYears, 2, 'a new touch cannot carry over the previous combo');
+windowEvents.get('touchcancel')({ touches: [] });
+assert.equal(lifecycle.activeCombo, 0, 'touch cancellation breaks the chain');
+assert.equal(lifecycle.isPointerDown, false);
+console.log('Passed: separate mouse/touch swipes cannot combine; multi-touch stays on the original finger and cancellation resets combos.');
