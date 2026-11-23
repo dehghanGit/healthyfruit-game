@@ -144,3 +144,67 @@ for (const [width, height] of [[320, 568], [360, 800], [390, 844], [430, 932], [
 }
 console.log('Passed: milestone rewards, streak reset, penalties, warning rotation, all five losses, final accounting, pause and restart.');
 console.log('Passed: portrait/landscape trajectories, visible time, safe screen bounds and consistent 30/60/120Hz motion.');
+
+// A blank cached background (for example after GPU eviction) must still erase
+// old fruit and blade pixels, including the edges during screen shake.
+const frameCalls = [];
+const renderGame = Object.create(GameEngine.prototype);
+Object.assign(renderGame, {
+    width: 320, height: 568, dpr: 1.5, screenShake: 10,
+    ctx: {
+        setTransform(...args) { frameCalls.push(['transform', ...args]); },
+        clearRect(...args) { frameCalls.push(['clear', ...args]); },
+        fillRect(...args) { frameCalls.push(['fill', this.globalAlpha, this.globalCompositeOperation, ...args]); },
+        save() {}, restore() {}, translate() { frameCalls.push(['shake']); }
+    },
+    particles: { drawDecals() {}, drawForeground() {} },
+    drawBackground() {}, drawFoods() {}, drawHalves() {}, drawBladeTrail() {}
+});
+renderGame.render();
+renderGame.render();
+for (let frame = 0; frame < 2; frame++) {
+    const calls = frameCalls.slice(frame * 4, frame * 4 + 4);
+    assert.deepEqual(calls, [
+        ['transform', 1.5, 0, 0, 1.5, 0, 0],
+        ['clear', 0, 0, 320, 568],
+        ['fill', 1, 'source-over', 0, 0, 320, 568],
+        ['shake']
+    ], 'every frame fully erases old pixels before applying screen shake');
+}
+
+// Exercise the actual lifecycle event handlers rather than calling recovery
+// methods directly. Returning from a hidden tab must not resume a held swipe.
+const documentEvents = new Map(), windowEvents = new Map(), canvasEvents = new Map();
+env.document.addEventListener = (name, fn) => documentEvents.set(name, fn);
+env.window.addEventListener = (name, fn) => windowEvents.set(name, fn);
+const lifecycle = new TestGame({
+    getContext: () => ctx,
+    addEventListener: (name, fn) => canvasEvents.set(name, fn)
+}, ui);
+GameEngine.prototype.bindEvents.call(lifecycle);
+lifecycle.startGame();
+lifecycle.isPointerDown = true;
+lifecycle.lastPointer = { x: 5, y: 5 };
+lifecycle.bladeTrail = [{ x: 5, y: 5, time: 0 }];
+lifecycle.lastTime = 100;
+env.document.hidden = true;
+documentEvents.get('visibilitychange')();
+assert.equal(lifecycle.state, 'PAUSED');
+assert.equal(lifecycle.isPointerDown, false);
+assert.equal(lifecycle.lastPointer, null);
+assert.equal(lifecycle.bladeTrail.length, 0);
+assert.equal(lifecycle.lastTime, 0);
+env.document.hidden = false;
+lifecycle.backgroundCanvas = { discarded: true };
+documentEvents.get('visibilitychange')();
+assert.equal(lifecycle.backgroundCanvas, null, 'returning rebuilds the cached background');
+assert.equal(lifecycle.state, 'PAUSED', 'the player chooses when to resume');
+lifecycle.backgroundCanvas = { discarded: true };
+canvasEvents.get('contextrestored')();
+assert.equal(lifecycle.backgroundCanvas, null, 'context restoration rebuilds canvas resources');
+lifecycle.isPointerDown = true;
+lifecycle.bladeTrail = [{ x: 1, y: 1 }];
+windowEvents.get('blur')();
+assert.equal(lifecycle.isPointerDown, false);
+assert.equal(lifecycle.bladeTrail.length, 0);
+console.log('Passed: full-frame erasure with a blank background, hidden-tab pause, canvas recovery and lost-focus swipe reset.');

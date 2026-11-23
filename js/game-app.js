@@ -1420,6 +1420,20 @@ class GameEngine {
     }
 
     bindEvents() {
+        document.addEventListener('visibilitychange', () => {
+            this.isPointerDown = false;
+            this.lastPointer = null;
+            this.bladeTrail = [];
+            this.lastTime = 0;
+            if (document.hidden) {
+                this.pauseGame();
+            } else {
+                // Browsers can discard canvas backing stores while suspended.
+                this.initCanvas();
+            }
+        });
+        this.canvas.addEventListener('contextrestored', () => this.initCanvas());
+
         window.addEventListener('resize', () => {
             this.initCanvas();
             if (this.state === 'START') {
@@ -1476,6 +1490,10 @@ class GameEngine {
         this.canvas.addEventListener('mousedown', onPointerDown);
         window.addEventListener('mousemove', onPointerMove);
         window.addEventListener('mouseup', onPointerUp);
+        window.addEventListener('blur', () => {
+            onPointerUp();
+            this.bladeTrail = [];
+        });
 
         // لمسی (Mobile/Tablet)
         this.canvas.addEventListener('touchstart', (e) => {
@@ -1896,6 +1914,14 @@ class GameEngine {
 
     // رندر کلی بازی
     render() {
+        // Erase the entire surface before shaking or drawing cached layers.
+        // A discarded/transparent background must never leave old fruit behind.
+        this.ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
+        this.ctx.globalAlpha = 1;
+        this.ctx.globalCompositeOperation = 'source-over';
+        this.ctx.clearRect(0, 0, this.width, this.height);
+        this.ctx.fillStyle = '#0c0704';
+        this.ctx.fillRect(0, 0, this.width, this.height);
         this.ctx.save();
 
         // اعمال لرزش صفحه
@@ -1934,6 +1960,9 @@ class GameEngine {
             background.width = this.canvas.width;
             background.height = this.canvas.height;
             const ctx = background.getContext('2d');
+            background.addEventListener('contextrestored', () => {
+                if (this.backgroundCanvas === background) this.backgroundCanvas = null;
+            });
             ctx.scale(this.dpr, this.dpr);
             this.paintBackground(ctx);
             this.backgroundCanvas = background;
