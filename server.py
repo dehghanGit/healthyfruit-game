@@ -1001,6 +1001,12 @@ def create_app(initialize=True):
         app.logger.exception("Unhandled request failure")
         return APIController().send_json({"success": False, "error": "Internal server error"}, 500)
 
+    @app.get("/healthz")
+    def health():
+        with get_db() as conn:
+            conn.execute("SELECT 1").fetchone()
+        return {"status": "ok"}
+
     @app.route("/", defaults={"path": ""}, methods=["GET", "POST"])
     @app.route("/<path:path>", methods=["GET", "POST"])
     def dispatch(path):
@@ -1025,6 +1031,9 @@ def run_server():
           max_request_body_size=MAX_BODY, max_request_header_size=8192,
           outbuf_overflow=256 * 1024, outbuf_high_watermark=512 * 1024,
           asyncore_use_poll=hasattr(__import__("select"), "poll"),
+          # ProxyFix consumes these only when TRUST_PROXY=1. Keep the container
+          # port private to Coolify's proxy when enabling this option.
+          clear_untrusted_proxy_headers=os.environ.get("TRUST_PROXY") != "1",
           log_socket_errors=False, expose_tracebacks=False)
 
 

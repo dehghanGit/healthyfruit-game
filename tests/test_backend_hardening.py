@@ -35,6 +35,18 @@ class BackendHardeningTest(unittest.TestCase):
             'username': server.ADMIN_USER, 'password': server.ADMIN_PASS})
         self.assertEqual(response.status_code, 200)
 
+    def test_health_check_and_persistent_database_reopen(self):
+        self.assertEqual(self.client.get('/healthz').json, {'status': 'ok'})
+        self.assertEqual(self.register().status_code, 200)
+        server.close_db_pool()
+        restarted = server.create_app().test_client()
+        self.assertEqual(restarted.get('/healthz').status_code, 200)
+        conn = sqlite3.connect(server.DB_PATH)
+        try:
+            self.assertEqual(conn.execute('SELECT count(*) FROM players').fetchone()[0], 1)
+        finally:
+            conn.close()
+
     def test_private_files_and_traversal_are_not_public(self):
         for path in ['/health_battle.db', '/server.py', '/tests/', '/assets/source/',
                      '/requirements.txt', '/css/../server.py', '/js/%2e%2e/server.py',
