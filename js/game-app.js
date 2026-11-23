@@ -1745,13 +1745,19 @@ class GameEngine {
         const level = Math.min(2, Math.floor((this.difficultyTimer + 1e-9) / 45));
         const goodCount = (kind === 'master' ? 3 : 2) + level;
         const badCount = kind === 'mixed' ? (level === 2 ? 2 : 1) : 0;
-        // Put hazards at the edges of a simultaneous fan, leaving a clear
-        // healthy group to swipe through for a combo.
         const types = Array(goodCount).fill('healthy');
-        if (badCount >= 1) types.unshift('unhealthy');
-        if (badCount >= 2) types.push('unhealthy');
-        this.pendingSpawns = [];
-        types.forEach((type, index) => this.spawnSingleFood('narrow', index, types.length, type));
+        types.push(...Array(badCount).fill('unhealthy'));
+        for (let i = types.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [types[i], types[j]] = [types[j], types[i]];
+        }
+        const curves = ['wide', 'narrow', 'cross'];
+        const curveType = curves[Math.floor(Math.random() * curves.length)];
+        // Use ordinary throws in a tight burst, rather than a simultaneous row.
+        this.pendingSpawns = types.map((forcedType, index) => ({
+            at: this.difficultyTimer + index * 0.16, curveType, index,
+            count: types.length, forcedType
+        }));
         this.particles.addFloatingText(this.width / 2, this.height * 0.3,
             kind === 'master' ? 'موج استاد!' : 'موج ترکیبی!',
             kind === 'master' ? '#81c784' : '#ffca28', 28, true);
@@ -1772,15 +1778,13 @@ class GameEngine {
         const data = { ...catalog[Math.floor(Math.random() * catalog.length)], type: isUnhealthy ? 'unhealthy' : 'healthy' };
 
         // Fixed launch lanes and a fitted ballistic arc keep the entire food on screen.
-        const baseSize = Math.min(110, forcedType ? this.width / (totalInWave + 1) * 0.8 : 110,
+        const baseSize = Math.min(110,
             Math.max(48, Math.min(this.width * 0.22, this.height * 0.18)));
         const size = baseSize * (0.9 + Math.random() * 0.1);
         const radius = size / 2;
         const margin = radius + 12;
-        const fanSpacing = Math.min(baseSize + 18, (this.width - baseSize - 24) / Math.max(1, totalInWave - 1));
-        const fanHalfWidth = fanSpacing * (totalInWave - 1) / 2;
-        const left = forcedType ? this.width / 2 - fanHalfWidth : Math.max(margin, this.width * 0.22);
-        const right = forcedType ? this.width / 2 + fanHalfWidth : Math.min(this.width - margin, this.width * 0.78);
+        const left = Math.max(margin, this.width * 0.22);
+        const right = Math.min(this.width - margin, this.width * 0.78);
         const fromLeft = waveIndex % 2 === 0;
         let startX, landingX;
         if (curveType === 'narrow') {
@@ -1959,14 +1963,14 @@ class GameEngine {
                 this.spawnSpecialWave(kind);
                 this.spawnTimer = 0;
             // Leave space before a special wave so regular food does not pile
-            // into its deliberate layout. Pauses freeze this game-time clock.
+            // into its burst. Pauses freeze this game-time clock.
             } else if (this.nextSpecialWaveAt - this.difficultyTimer > 3 && this.spawnTimer >= currentInterval) {
                 this.spawnTimer = 0;
                 this.spawnWave();
             }
             const ready = this.pendingSpawns.filter(spawn => spawn.at <= this.difficultyTimer + 1e-9);
             this.pendingSpawns = this.pendingSpawns.filter(spawn => spawn.at > this.difficultyTimer + 1e-9);
-            ready.forEach(spawn => this.spawnSingleFood(spawn.curveType, spawn.index, spawn.count));
+            ready.forEach(spawn => this.spawnSingleFood(spawn.curveType, spawn.index, spawn.count, spawn.forcedType));
         }
     }
 

@@ -186,9 +186,10 @@ waveGame.spawnSingleFood = function(curve, index, count, type) {
     launched.push({ at: this.difficultyTimer, curve, index, count, type });
 };
 waveGame.spawnSpecialWave = function(kind) {
-    const before = launched.length;
     GameEngine.prototype.spawnSpecialWave.call(this, kind);
-    specials.push({ at: this.difficultyTimer, kind, foods: launched.slice(before) });
+    specials.push({ at: this.difficultyTimer, kind, foods: this.pendingSpawns.map(spawn => ({
+        at: spawn.at, curve: spawn.curveType, type: spawn.forcedType
+    })) });
 };
 const simulate = seconds => {
     for (let frame = 0; frame < Math.round(seconds * 60); frame++) waveGame.update(1 / 60);
@@ -204,7 +205,7 @@ assert.equal(specials.length, 0, 'background/pause time cannot trigger waves');
 waveGame.resumeGame();
 simulate(0.1);
 assert.equal(specials.length, 1);
-simulate(90);
+simulate(90.9);
 assert.equal(specials.length, 10, 'exactly one special every ten active seconds');
 for (let index = 0; index < specials.length; index++) {
     const wave = specials[index];
@@ -216,8 +217,20 @@ for (let index = 0; index < specials.length; index++) {
     const badCount = wave.foods.filter(food => food.type === 'unhealthy').length;
     assert.equal(goodCount, (wave.kind === 'master' ? 3 : 2) + level);
     assert.equal(badCount, wave.kind === 'master' ? 0 : level === 2 ? 2 : 1);
-    assert.ok(wave.foods.every(food => food.at === wave.at && food.curve === 'narrow'),
-        'special foods launch together in a fan for deliberate swipes');
+    wave.foods.forEach((food, foodIndex) => {
+        assert.ok(['wide', 'narrow', 'cross'].includes(food.curve));
+        assert.ok(Math.abs(food.at - wave.at - foodIndex * 0.16) < 1e-8,
+            'special foods are normal throws scheduled 160ms apart');
+    });
+    const actual = launched.filter(food => food.type && food.at >= wave.at - 1e-8 && food.at < wave.at + 1);
+    assert.equal(actual.length, wave.foods.length, 'every queued special food actually launches');
+    assert.equal(actual.filter(food => food.type === 'healthy').length, goodCount);
+    assert.equal(actual.filter(food => food.type === 'unhealthy').length, badCount);
+    assert.ok(actual.at(-1).at - actual[0].at < 1, 'the whole burst launches in under a second');
+    for (let i = 1; i < actual.length; i++) {
+        assert.ok(actual[i].at > actual[i - 1].at, 'the wave is staggered rather than simultaneous');
+        assert.ok(actual[i].at - actual[i - 1].at < 0.2, 'throws remain close in time');
+    }
     assert.ok(!launched.some(food => !food.type && food.at > expectedTime - 2.2 && food.at <= expectedTime),
         'a quiet lead-in prevents regular waves piling into the special');
 }
@@ -239,52 +252,56 @@ waveGame.spawnWave();
 waveGame.triggerGameOver();
 assert.equal(waveGame.pendingSpawns.length, 0, 'game over cancels pending launches');
 
-// Even the largest mixed wave must keep the hazards separate from its healthy
-// center group, including on the narrowest supported phone screen.
+// Exercise every ordinary arc for special waves on phones and desktops. The
+// forced composition must not shrink food or replace its normal launch lanes.
+const originalMath = env.Math;
+env.Math = Object.create(Math);
 for (const [width, height] of [[320, 568], [390, 844], [740, 360], [1920, 1080]]) {
     env.window.innerWidth = width;
     env.window.innerHeight = height;
     game.initCanvas();
-    for (const elapsed of [10, 60, 100, 1000]) {
+    for (const randomValue of [0.1, 0.5, 0.9]) {
+        env.Math.random = () => randomValue;
         for (const kind of ['master', 'mixed']) {
             game.startGame();
-            game.difficultyTimer = elapsed;
+            game.difficultyTimer = kind === 'master' ? 10 : 100;
             game.nextSpecialWaveAt = Infinity;
             game.spawnSpecialWave(kind);
+            assert.equal(game.foods.length, 0, 'special waves use the normal game-time launch queue');
+            const count = game.pendingSpawns.length;
+            const curve = game.pendingSpawns[0].curveType;
+            for (let frame = 0; frame < 60; frame++) game.update(1 / 60);
             const foods = game.foods.slice();
-            if (kind === 'mixed') assert.equal(foods[0].data.type, 'unhealthy');
+            assert.equal(foods.length, count);
+            const goodCount = foods.filter(food => food.data.type === 'healthy').length;
+            assert.equal(goodCount, kind === 'master' ? 3 : 4);
+            assert.equal(foods.filter(food => food.data.type === 'unhealthy').length, kind === 'master' ? 0 : 2);
+            assert.ok(Math.max(...foods.map(food => food.y)) - Math.min(...foods.map(food => food.y)) > 20,
+                'close launches produce natural flight positions rather than a row');
+            if (curve !== 'narrow') assert.ok(foods.every(food => Math.abs(food.vx) > 0),
+                'wide and cross throws keep their ordinary horizontal motion');
             for (let frame = 0; frame < 132; frame++) {
                 game.update(1 / 60);
-                for (let i = 0; i < foods.length; i++) {
-                    const food = foods[i];
-                    assert.ok(food.x - food.radius >= 0 && food.x + food.radius <= width);
-                    if (i > 0) assert.ok(food.x - foods[i - 1].x > food.radius + foods[i - 1].radius,
-                        'adjacent foods remain separate so hazards are avoidable');
+                for (const food of foods) {
+                    assert.ok(food.x - food.radius >= 0 && food.x + food.radius <= width,
+                        'normal-arc special throws stay inside screen edges');
                 }
+            }
+        }
+        for (const curve of ['wide', 'narrow', 'cross']) {
+            game.startGame();
+            game.spawnSingleFood(curve, 1, 6);
+            const normal = game.foods[0];
+            game.spawnSingleFood(curve, 1, 6, 'healthy');
+            const special = game.foods[1];
+            for (const key of ['width', 'height', 'radius', 'x', 'y', 'vx', 'vy', 'gravity']) {
+                assert.equal(special[key], normal[key], 'special food keeps ordinary size and flight geometry');
             }
         }
     }
 }
-for (const [width, height] of [[320, 568], [1920, 1080]]) {
-    env.window.innerWidth = width;
-    env.window.innerHeight = height;
-    game.initCanvas();
-    for (const kind of ['master', 'mixed']) {
-        game.startGame();
-        game.difficultyTimer = kind === 'master' ? 10 : 100;
-        game.nextSpecialWaveAt = Infinity;
-        game.spawnSpecialWave(kind);
-        for (let frame = 0; frame < 66; frame++) game.update(1 / 60);
-        const healthy = game.foods.filter(food => food.data.type === 'healthy');
-        game.isPointerDown = true;
-        const y = healthy.reduce((sum, food) => sum + food.y, 0) / healthy.length;
-        game.checkSliceCollision({ x: healthy[0].x, y }, { x: healthy[healthy.length - 1].x, y });
-        assert.equal(game.healthyCuts, healthy.length, 'one deliberate swipe can slice the healthy group');
-        assert.equal(game.hearts, 5, 'the healthy-group swipe avoids the edge hazards');
-        assert.ok(game.bonusYears > 0, 'special layouts support the single-swipe combo');
-    }
-}
-console.log('Passed: 10s master / 20s mixed waves, guaranteed foods, capped growth, pause/restart timing, safe mobile layouts and playable combo swipes.');
+if (originalMath === undefined) delete env.Math; else env.Math = originalMath;
+console.log('Passed: 10s master / 20s mixed waves, guaranteed foods, capped growth, pause/restart timing and ordinary 160ms burst throws.');
 
 // A blank cached background (for example after GPU eviction) must still erase
 // old fruit and blade pixels, including the edges during screen shake.
