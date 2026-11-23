@@ -1755,7 +1755,10 @@ class GameEngine {
         const startY = this.height + radius + 12;
         const apexY = Math.min(this.height - size,
             Math.max(this.height * 0.34, Math.min(172, this.height * 0.4) + radius));
-        const apexFrames = 66; // 1.1 seconds to the apex gives more time to react and slice.
+        // Speed up smoothly with successful cuts, capped at 1.5x. Refit the
+        // whole trajectory so faster fruit follows the same safe flight arc.
+        const flightSpeed = 1.05 + Math.min(0.45, this.healthyCuts * 0.006);
+        const apexFrames = 66 / flightSpeed;
         const gravity = 2 * (startY - apexY) / (apexFrames * apexFrames);
         const vy = -gravity * (apexFrames - 0.5);
         const vx = (landingX - startX) / (2 * apexFrames);

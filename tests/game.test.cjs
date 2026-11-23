@@ -113,6 +113,8 @@ shortRun.handleHealthyCut(good, 0, { x: 1, y: 0 });
 for (let i = 0; i < 5; i++) shortRun.handleUnhealthyCut(soda, 0, { x: 1, y: 0 });
 assert.equal(result.isNewRecord, false, 'matching the previous record is not a new record');
 // Simulate the actual update loop across portrait/landscape sizes and refresh rates.
+const originalSpawnWave = game.spawnWave;
+game.spawnWave = () => {}; // Isolate each flight from later scheduled waves.
 for (const [width, height] of [[320, 568], [360, 800], [390, 844], [430, 932], [740, 360], [1920, 1080]]) {
     env.window.innerWidth = width;
     env.window.innerHeight = height;
@@ -120,30 +122,40 @@ for (const [width, height] of [[320, 568], [360, 800], [390, 844], [430, 932], [
     for (const hz of [30, 60, 120]) {
         for (const curve of ['wide', 'narrow', 'cross']) {
             for (const lane of [0, 1, 4]) {
-                game.startGame();
-                game.spawnSingleFood(curve, lane, 5);
-                const f = game.foods[0];
-                let peak = height * 2, visibleFrames = 0;
-                for (let frame = 0; frame < hz * 2; frame++) {
-                    game.update(1 / hz);
-                    peak = Math.min(peak, f.y);
-                    if (f.y - f.radius < height && f.y + f.radius > 0) {
-                        visibleFrames++;
-                        assert.ok(f.x - f.radius >= 0 && f.x + f.radius <= width,
-                            `${width}x${height} ${curve} ${hz}Hz: food stays inside side edges`);
-                        assert.ok(f.y - f.radius >= Math.min(172, height * 0.4) - 1,
-                            'food stays below the status and information area');
-                    }
+                let previousVisibleTime = Infinity;
+                for (const cuts of [0, 25, 50, 75, 250]) {
+                    game.startGame();
+                    game.healthyCuts = cuts;
+                    game.spawnSingleFood(curve, lane, 5);
+                    const f = game.foods[0];
+                    let peak = height * 2, visibleFrames = 0;
+                    for (let frame = 0; frame < hz * 2; frame++) {
+                        game.update(1 / hz);
+                        peak = Math.min(peak, f.y);
+                        if (f.y - f.radius < height && f.y + f.radius > 0) {
+                            visibleFrames++;
+                            assert.ok(f.x - f.radius >= 0 && f.x + f.radius <= width,
+                                `${width}x${height} ${curve} ${hz}Hz: food stays inside side edges`);
+                            assert.ok(f.y - f.radius >= Math.min(172, height * 0.4) - 1,
+                                'food stays below the status and information area');
+                      }
                 }
-                assert.ok(visibleFrames > hz, 'at least one second to slice visible food');
+                const visibleTime = visibleFrames / hz;
+                assert.ok(visibleTime > 0.9, 'even the fastest fruit gives time to react and slice');
+                assert.ok(visibleTime <= previousVisibleTime + 1 / hz, 'flight gradually gets faster and then caps');
+                if (cuts === 75) assert.ok(visibleTime < 1.5, 'late-game fruit is noticeably faster');
+                if (cuts === 250) assert.ok(Math.abs(visibleTime - previousVisibleTime) <= 1 / hz, 'speed stays capped');
+                previousVisibleTime = visibleTime;
                 assert.ok(Math.abs(peak - Math.max(height * 0.34, Math.min(172, height * 0.4) + f.radius)) < 1,
                     'apex remains the same across refresh rates');
+              }
             }
         }
     }
 }
+game.spawnWave = originalSpawnWave;
 console.log('Passed: milestone rewards, streak reset, penalties, warning rotation, all five losses, final accounting, pause and restart.');
-console.log('Passed: portrait/landscape trajectories, visible time, safe screen bounds and consistent 30/60/120Hz motion.');
+console.log('Passed: gradual flight-speed ramp and cap, portrait/landscape trajectories, reaction time, safe bounds and 30/60/120Hz motion.');
 
 // A blank cached background (for example after GPU eviction) must still erase
 // old fruit and blade pixels, including the edges during screen shake.
