@@ -1306,8 +1306,10 @@ class GameEngine {
         // سیستم موج‌دهی و زمان‌بندی
         this.lastTime = 0;
         this.spawnTimer = 0;
-        this.spawnInterval = 2.2; // ثانیه
+        this.spawnInterval = 2.4; // ثانیه
         this.difficultyTimer = 0;
+        this.nextSpecialWaveAt = 10;
+        this.pendingSpawns = [];
         this.screenShake = 0;
 
         // سیستم کومبو (برش همزمان چند غذا در یک ضربه)
@@ -1723,7 +1725,7 @@ class GameEngine {
         if (this.state !== 'PLAYING') return;
 
         // انتخاب تعداد غذا در این موج (بین ۱ تا ۴ عدد با توجه به امتیاز)
-        const difficulty = Math.min(3, Math.floor(this.healthyCuts / 25));
+        const difficulty = Math.min(2, Math.floor((this.difficultyTimer + 1e-9) / 45));
         const count = 1 + Math.floor(Math.random() * (2 + difficulty));
 
         // انتخاب نوع پرتاب:
@@ -1734,12 +1736,25 @@ class GameEngine {
         const curveType = curveTypes[Math.floor(Math.random() * curveTypes.length)];
 
         for (let i = 0; i < count; i++) {
-            setTimeout(() => {
-                if (this.state === 'PLAYING') {
-                    this.spawnSingleFood(curveType, i, count);
-                }
-            }, i * 220); // تاخیر ریتمیک پرتاب
+            this.pendingSpawns.push({ at: this.difficultyTimer + i * 0.22, curveType, index: i, count });
         }
+    }
+
+    spawnSpecialWave(kind) {
+        if (this.state !== 'PLAYING') return;
+        const level = Math.min(2, Math.floor((this.difficultyTimer + 1e-9) / 45));
+        const goodCount = (kind === 'master' ? 3 : 2) + level;
+        const badCount = kind === 'mixed' ? (level === 2 ? 2 : 1) : 0;
+        // Put hazards at the edges of a simultaneous fan, leaving a clear
+        // healthy group to swipe through for a combo.
+        const types = Array(goodCount).fill('healthy');
+        if (badCount >= 1) types.unshift('unhealthy');
+        if (badCount >= 2) types.push('unhealthy');
+        this.pendingSpawns = [];
+        types.forEach((type, index) => this.spawnSingleFood('narrow', index, types.length, type));
+        this.particles.addFloatingText(this.width / 2, this.height * 0.3,
+            kind === 'master' ? 'موج استاد!' : 'موج ترکیبی!',
+            kind === 'master' ? '#81c784' : '#ffca28', 28, true);
     }
 
     getFoodDimensions(id, size) {
@@ -1749,20 +1764,23 @@ class GameEngine {
         return { width: size * Math.min(1, ratio), height: size * Math.min(1, 1 / ratio) };
     }
 
-    spawnSingleFood(curveType, waveIndex = 0, totalInWave = 1) {
+    spawnSingleFood(curveType, waveIndex = 0, totalInWave = 1, forcedType = null) {
         // A gentle ramp keeps healthy foods in the majority throughout a run.
         const unhealthyChance = 0.36 + Math.min(0.04, this.healthyCuts * 0.0008);
-        const isUnhealthy = Math.random() < unhealthyChance;
+        const isUnhealthy = forcedType ? forcedType === 'unhealthy' : Math.random() < unhealthyChance;
         const catalog = isUnhealthy ? FOOD_DATABASE.unhealthy : FOOD_DATABASE.healthy;
         const data = { ...catalog[Math.floor(Math.random() * catalog.length)], type: isUnhealthy ? 'unhealthy' : 'healthy' };
 
         // Fixed launch lanes and a fitted ballistic arc keep the entire food on screen.
-        const size = Math.min(110, Math.max(48, Math.min(this.width * 0.22, this.height * 0.18)))
-            * (0.9 + Math.random() * 0.1);
+        const baseSize = Math.min(110, forcedType ? this.width / (totalInWave + 1) * 0.8 : 110,
+            Math.max(48, Math.min(this.width * 0.22, this.height * 0.18)));
+        const size = baseSize * (0.9 + Math.random() * 0.1);
         const radius = size / 2;
         const margin = radius + 12;
-        const left = Math.max(margin, this.width * 0.22);
-        const right = Math.min(this.width - margin, this.width * 0.78);
+        const fanSpacing = Math.min(baseSize + 18, (this.width - baseSize - 24) / Math.max(1, totalInWave - 1));
+        const fanHalfWidth = fanSpacing * (totalInWave - 1) / 2;
+        const left = forcedType ? this.width / 2 - fanHalfWidth : Math.max(margin, this.width * 0.22);
+        const right = forcedType ? this.width / 2 + fanHalfWidth : Math.min(this.width - margin, this.width * 0.78);
         const fromLeft = waveIndex % 2 === 0;
         let startX, landingX;
         if (curveType === 'narrow') {
@@ -1777,10 +1795,9 @@ class GameEngine {
         const startY = this.height + radius + 12;
         const apexY = Math.min(this.height - size,
             Math.max(this.height * 0.34, Math.min(172, this.height * 0.4) + radius));
-        // Speed up smoothly with successful cuts, capped at 1.5x. Refit the
-        // whole trajectory so faster fruit follows the same safe flight arc.
-        const flightSpeed = 1.05 + Math.min(0.45, this.healthyCuts * 0.006);
-        const apexFrames = 66 / flightSpeed;
+        // Restore the original, easier flight speed. Difficulty now grows
+        // through wave size and rhythm instead of faster flight.
+        const apexFrames = 66;
         const gravity = 2 * (startY - apexY) / (apexFrames * apexFrames);
         const vy = -gravity * (apexFrames - 0.5);
         const vx = (landingX - startX) / (2 * apexFrames);
@@ -1802,6 +1819,7 @@ class GameEngine {
 
     returnToStart() {
         this.state = 'START';
+        this.pendingSpawns = [];
         this.resetCombo();
         this.particles.clear();
         this.bladeTrail = [];
@@ -1825,6 +1843,9 @@ class GameEngine {
         this.halves = [];
         this.particles.clear();
         this.spawnTimer = 0;
+        this.difficultyTimer = 0;
+        this.nextSpecialWaveAt = 10;
+        this.pendingSpawns = [];
         this.resetCombo();
         this.bladeTrail = [];
         this.screenShake = 0;
@@ -1856,6 +1877,7 @@ class GameEngine {
     triggerGameOver() {
         if (this.state === 'GAMEOVER') return;
         this.state = 'GAMEOVER';
+        this.pendingSpawns = [];
         this.resetCombo();
         this.screenShake = 0;
         this.isPointerDown = false;
@@ -1928,14 +1950,23 @@ class GameEngine {
 
         // اسپاون کردن امواج جدید غذا
         if (this.state === 'PLAYING') {
+            this.difficultyTimer += deltaTime;
             this.spawnTimer += deltaTime;
-            // با افزایش امتیاز، فاصله پرتاب غذاها به تدریج کاهش می‌یابد (سرعت و هیجان بیشتر)
-            const currentInterval = Math.max(1.3, this.spawnInterval - Math.min(0.9, this.healthyCuts * 0.015));
-
-            if (this.spawnTimer >= currentInterval) {
+            const currentInterval = Math.max(1.8, this.spawnInterval - this.difficultyTimer * 0.004);
+            if (this.difficultyTimer + 1e-9 >= this.nextSpecialWaveAt) {
+                const kind = Math.round(this.nextSpecialWaveAt / 10) % 2 === 0 ? 'mixed' : 'master';
+                this.nextSpecialWaveAt += 10;
+                this.spawnSpecialWave(kind);
+                this.spawnTimer = 0;
+            // Leave space before a special wave so regular food does not pile
+            // into its deliberate layout. Pauses freeze this game-time clock.
+            } else if (this.nextSpecialWaveAt - this.difficultyTimer > 3 && this.spawnTimer >= currentInterval) {
                 this.spawnTimer = 0;
                 this.spawnWave();
             }
+            const ready = this.pendingSpawns.filter(spawn => spawn.at <= this.difficultyTimer + 1e-9);
+            this.pendingSpawns = this.pendingSpawns.filter(spawn => spawn.at > this.difficultyTimer + 1e-9);
+            ready.forEach(spawn => this.spawnSingleFood(spawn.curveType, spawn.index, spawn.count));
         }
     }
 

@@ -139,9 +139,9 @@ shortRun.startGame();
 shortRun.handleHealthyCut(good, 0, { x: 1, y: 0 });
 for (let i = 0; i < 5; i++) shortRun.handleUnhealthyCut(soda, 0, { x: 1, y: 0 });
 assert.equal(result.isNewRecord, false, 'matching the previous record is not a new record');
-// Simulate the actual update loop across portrait/landscape sizes and refresh rates.
+// Simulate original-speed flights across scores, screen sizes and refresh rates.
 const originalSpawnWave = game.spawnWave;
-game.spawnWave = () => {}; // Isolate each flight from later scheduled waves.
+game.spawnWave = () => {};
 for (const [width, height] of [[320, 568], [360, 800], [390, 844], [430, 932], [740, 360], [1920, 1080]]) {
     env.window.innerWidth = width;
     env.window.innerHeight = height;
@@ -149,8 +149,7 @@ for (const [width, height] of [[320, 568], [360, 800], [390, 844], [430, 932], [
     for (const hz of [30, 60, 120]) {
         for (const curve of ['wide', 'narrow', 'cross']) {
             for (const lane of [0, 1, 4]) {
-                let previousVisibleTime = Infinity;
-                for (const cuts of [0, 25, 50, 75, 250]) {
+                for (const cuts of [0, 75, 250]) {
                     game.startGame();
                     game.healthyCuts = cuts;
                     game.spawnSingleFood(curve, lane, 5);
@@ -165,24 +164,127 @@ for (const [width, height] of [[320, 568], [360, 800], [390, 844], [430, 932], [
                                 `${width}x${height} ${curve} ${hz}Hz: food stays inside side edges`);
                             assert.ok(f.y - f.radius >= Math.min(172, height * 0.4) - 1,
                                 'food stays below the status and information area');
-                      }
+                        }
+                    }
+                    assert.ok(visibleFrames / hz > 1, 'original flight speed leaves over a second to slice');
+                    assert.ok(Math.abs(peak - Math.max(height * 0.34, Math.min(172, height * 0.4) + f.radius)) < 1,
+                        'safe apex stays consistent at every score and refresh rate');
                 }
-                const visibleTime = visibleFrames / hz;
-                assert.ok(visibleTime > 0.9, 'even the fastest fruit gives time to react and slice');
-                assert.ok(visibleTime <= previousVisibleTime + 1 / hz, 'flight gradually gets faster and then caps');
-                if (cuts === 75) assert.ok(visibleTime < 1.5, 'late-game fruit is noticeably faster');
-                if (cuts === 250) assert.ok(Math.abs(visibleTime - previousVisibleTime) <= 1 / hz, 'speed stays capped');
-                previousVisibleTime = visibleTime;
-                assert.ok(Math.abs(peak - Math.max(height * 0.34, Math.min(172, height * 0.4) + f.radius)) < 1,
-                    'apex remains the same across refresh rates');
-              }
             }
         }
     }
 }
 game.spawnWave = originalSpawnWave;
 console.log('Passed: same-swipe combo rewards, strict 400ms boundary, idle expiry, penalties, final accounting, pause and restart.');
-console.log('Passed: gradual flight-speed ramp and cap, portrait/landscape trajectories, reaction time, safe bounds and 30/60/120Hz motion.');
+console.log('Passed: restored original flight speed, reaction time, safe bounds and 30/60/120Hz motion.');
+
+// Special waves use active play time, have guaranteed compositions, and replace
+// each other at shared deadlines instead of dumping two waves onto the player.
+const waveGame = new TestGame({ getContext: () => ctx }, ui);
+const launched = [], specials = [];
+waveGame.spawnSingleFood = function(curve, index, count, type) {
+    launched.push({ at: this.difficultyTimer, curve, index, count, type });
+};
+waveGame.spawnSpecialWave = function(kind) {
+    const before = launched.length;
+    GameEngine.prototype.spawnSpecialWave.call(this, kind);
+    specials.push({ at: this.difficultyTimer, kind, foods: launched.slice(before) });
+};
+const simulate = seconds => {
+    for (let frame = 0; frame < Math.round(seconds * 60); frame++) waveGame.update(1 / 60);
+};
+waveGame.startGame();
+simulate(9.9);
+assert.equal(specials.length, 0);
+const pausedAt = waveGame.difficultyTimer;
+waveGame.pauseGame();
+simulate(60);
+assert.equal(waveGame.difficultyTimer, pausedAt);
+assert.equal(specials.length, 0, 'background/pause time cannot trigger waves');
+waveGame.resumeGame();
+simulate(0.1);
+assert.equal(specials.length, 1);
+simulate(90);
+assert.equal(specials.length, 10, 'exactly one special every ten active seconds');
+for (let index = 0; index < specials.length; index++) {
+    const wave = specials[index];
+    const expectedTime = (index + 1) * 10;
+    assert.ok(Math.abs(wave.at - expectedTime) < 1 / 60);
+    assert.equal(wave.kind, index % 2 === 0 ? 'master' : 'mixed');
+    const level = Math.min(2, Math.floor(expectedTime / 45));
+    const goodCount = wave.foods.filter(food => food.type === 'healthy').length;
+    const badCount = wave.foods.filter(food => food.type === 'unhealthy').length;
+    assert.equal(goodCount, (wave.kind === 'master' ? 3 : 2) + level);
+    assert.equal(badCount, wave.kind === 'master' ? 0 : level === 2 ? 2 : 1);
+    assert.ok(wave.foods.every(food => food.at === wave.at && food.curve === 'narrow'),
+        'special foods launch together in a fan for deliberate swipes');
+    assert.ok(!launched.some(food => !food.type && food.at > expectedTime - 2.2 && food.at <= expectedTime),
+        'a quiet lead-in prevents regular waves piling into the special');
+}
+waveGame.pendingSpawns.push({ at: 101, curveType: 'wide', index: 0, count: 1 });
+waveGame.startGame();
+assert.equal(waveGame.pendingSpawns.length, 0);
+assert.equal(waveGame.difficultyTimer, 0);
+assert.equal(waveGame.nextSpecialWaveAt, 10);
+waveGame.spawnWave();
+assert.ok(waveGame.pendingSpawns.length >= 1);
+const queued = waveGame.pendingSpawns.length;
+waveGame.pauseGame();
+waveGame.update(1);
+assert.equal(waveGame.pendingSpawns.length, queued, 'pause freezes queued launches');
+waveGame.returnToStart();
+assert.equal(waveGame.pendingSpawns.length, 0, 'returning home cancels old-round launches');
+waveGame.startGame();
+waveGame.spawnWave();
+waveGame.triggerGameOver();
+assert.equal(waveGame.pendingSpawns.length, 0, 'game over cancels pending launches');
+
+// Even the largest mixed wave must keep the hazards separate from its healthy
+// center group, including on the narrowest supported phone screen.
+for (const [width, height] of [[320, 568], [390, 844], [740, 360], [1920, 1080]]) {
+    env.window.innerWidth = width;
+    env.window.innerHeight = height;
+    game.initCanvas();
+    for (const elapsed of [10, 60, 100, 1000]) {
+        for (const kind of ['master', 'mixed']) {
+            game.startGame();
+            game.difficultyTimer = elapsed;
+            game.nextSpecialWaveAt = Infinity;
+            game.spawnSpecialWave(kind);
+            const foods = game.foods.slice();
+            if (kind === 'mixed') assert.equal(foods[0].data.type, 'unhealthy');
+            for (let frame = 0; frame < 132; frame++) {
+                game.update(1 / 60);
+                for (let i = 0; i < foods.length; i++) {
+                    const food = foods[i];
+                    assert.ok(food.x - food.radius >= 0 && food.x + food.radius <= width);
+                    if (i > 0) assert.ok(food.x - foods[i - 1].x > food.radius + foods[i - 1].radius,
+                        'adjacent foods remain separate so hazards are avoidable');
+                }
+            }
+        }
+    }
+}
+for (const [width, height] of [[320, 568], [1920, 1080]]) {
+    env.window.innerWidth = width;
+    env.window.innerHeight = height;
+    game.initCanvas();
+    for (const kind of ['master', 'mixed']) {
+        game.startGame();
+        game.difficultyTimer = kind === 'master' ? 10 : 100;
+        game.nextSpecialWaveAt = Infinity;
+        game.spawnSpecialWave(kind);
+        for (let frame = 0; frame < 66; frame++) game.update(1 / 60);
+        const healthy = game.foods.filter(food => food.data.type === 'healthy');
+        game.isPointerDown = true;
+        const y = healthy.reduce((sum, food) => sum + food.y, 0) / healthy.length;
+        game.checkSliceCollision({ x: healthy[0].x, y }, { x: healthy[healthy.length - 1].x, y });
+        assert.equal(game.healthyCuts, healthy.length, 'one deliberate swipe can slice the healthy group');
+        assert.equal(game.hearts, 5, 'the healthy-group swipe avoids the edge hazards');
+        assert.ok(game.bonusYears > 0, 'special layouts support the single-swipe combo');
+    }
+}
+console.log('Passed: 10s master / 20s mixed waves, guaranteed foods, capped growth, pause/restart timing, safe mobile layouts and playable combo swipes.');
 
 // A blank cached background (for example after GPU eviction) must still erase
 // old fruit and blade pixels, including the edges during screen shake.
