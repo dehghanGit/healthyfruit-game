@@ -69,10 +69,10 @@ export const api = {
     },
 
     // دریافت داده‌های لیدربرد بر اساس مقطع
-    async fetchLeaderboard(category = 'all') {
+    async fetchLeaderboard() {
         if (typeof fetch === 'undefined') return null;
         try {
-            const res = await fetch(`/api/leaderboard?category=${encodeURIComponent(category)}`, {
+            const res = await fetch('/api/leaderboard', {
                 credentials: 'include'
             });
             if (!res.ok) return null;

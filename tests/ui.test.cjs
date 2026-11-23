@@ -17,7 +17,9 @@ class Element {
         };
     }
     addEventListener(name, fn) { (this.handlers[name] ||= []).push(fn); }
-    fire(name) { for (const fn of this.handlers[name] || []) fn({ clientX: 1, clientY: 1 }); }
+    fire(name) { return Promise.all((this.handlers[name] || []).map(fn => fn({ clientX: 1, clientY: 1 }))); }
+    getAttribute(name) { return this[name]; }
+    focus() {}
     setAttribute() {}
     appendChild(child) { this.children.push(child); }
     append(...children) { this.children.push(...children); }
@@ -29,14 +31,21 @@ class Element {
     getContext() { return { resetTransform() {}, scale() {} }; }
 }
 const elements = new Map([...html.matchAll(/id="([^"]+)"/g)].map(m => [m[1], new Element()]));
+for (const id of ['btnBannerRegister', 'btnBannerUpgrade']) elements.set(id, new Element());
+const stageButtons = ['elementary', 'middle', 'high', 'other'].map(category => {
+    const button = new Element();
+    button['data-cat'] = category;
+    return button;
+});
 let ready;
 const document = {
     getElementById(id) { assert.ok(elements.has(id), `missing #${id}`); return elements.get(id); },
     createElement: () => new Element(),
+    querySelectorAll: selector => selector === '.stage-btn' ? stageButtons : [],
     addEventListener(name, callback) { if (name === 'DOMContentLoaded') ready = callback; }
 };
 const source = fs.readFileSync(path.join(root, 'js/game-app.js'), 'utf8')
-    .replace(/\}\)\(\);\s*$/, 'globalThis.classes = {GameEngine, FOOD_DATABASE, sounds};})();')
+    .replace(/\}\)\(\);\s*$/, 'globalThis.classes = {GameEngine, FOOD_DATABASE, sounds, api};})();')
     .replace('const game = new GameEngine(canvas, uiHooks);', 'const game = globalThis.game = new GameEngine(canvas, uiHooks);');
 let now = 0, timerId = 0;
 const timers = new Map();
@@ -110,3 +119,46 @@ env.game.startGame();
 assert.equal(env.game.state, 'PLAYING');
 assert.equal(env.game.score, 10);
 console.log('Passed: settings, warning heading, instant freeze, exact 2-second delay, five causes, continue to lifespan, return home and start a fresh game.');
+
+(async () => {
+    await Promise.resolve();
+    el('regSchool').value = 'Previously entered school';
+    el('regClass').value = '6';
+    await stageButtons[3].fire('click');
+    assert.equal(el('groupSchool').hidden, true);
+    assert.equal(el('groupClass').hidden, true);
+    assert.equal(el('regSchool').disabled, true);
+    assert.equal(el('regClass').disabled, true);
+    const css = fs.readFileSync(path.join(root, 'css/style.css'), 'utf8');
+    assert.match(css, /\.form-group\[hidden\]\s*\{\s*display:\s*none;/);
+    let registration;
+    env.classes.api.registerPlayer = async payload => {
+        registration = payload;
+        return { success: true, player: { ...payload, category_fa: 'سایر' } };
+    };
+    el('regFullName').value = 'Other player';
+    await el('btnSubmitRegister').fire('click');
+    assert.equal(registration.category, 'other');
+    assert.equal(registration.school, '');
+    assert.equal(registration.grade_class, '');
+    await stageButtons[0].fire('click');
+    assert.equal(el('groupSchool').hidden, false);
+    assert.equal(el('groupClass').hidden, false);
+    assert.equal(el('regSchool').disabled, false);
+    assert.equal(el('regClass').disabled, false);
+    await stageButtons[1].fire('click');
+    assert.equal(el('groupSchool').hidden, false);
+    assert.equal(el('groupClass').hidden, true);
+    assert.doesNotMatch(html, /class="tab-btn/);
+    let requests = 0;
+    env.classes.api.currentUser = null;
+    env.classes.api.fetchLeaderboard = async () => { requests++; return null; };
+    await el('btnLeaderboardStart').fire('click');
+    assert.equal(requests, 0, 'guests must register before querying rankings');
+    assert.match(el('leaderboardEmpty').textContent, /مشخصات/);
+    env.classes.api.currentUser = { category: 'other', category_fa: 'سایر', is_anonymous: false };
+    await el('btnLeaderboardStart').fire('click');
+    assert.equal(requests, 1);
+    assert.match(el('leaderboardCategoryLabel').textContent, /سایر/);
+    console.log('Passed: Other hides and omits school/grade, group switching restores fields, and leaderboard access requires registration.');
+})().catch(error => { console.error(error); process.exitCode = 1; });

@@ -159,17 +159,18 @@ class HealthBattleBackendTest(unittest.TestCase):
         self.assertEqual(elem_board["top_players"][0]["name"], "علی رضایی")
 
         # Query middle leaderboard -> Sara should be #1 with 50
-        status, mid_board, _ = self.make_request("/api/leaderboard?category=middle")
+        status, denied, _ = self.make_request("/api/leaderboard?category=middle")
+        self.assertEqual(status, 403)
+        self.assertNotIn('top_players', denied)
+        status, mid_board, _ = self.make_request("/api/leaderboard?category=middle", opener=opener2)
         self.assertEqual(status, 200)
         self.assertEqual(len(mid_board["top_players"]), 1)
         self.assertEqual(mid_board["top_players"][0]["name"], "سارا محمدی")
 
-        # Query overall leaderboard -> Sara #1 (50), Ali #2 (45)
+        # Overall rankings are unavailable to players.
         status, all_board, _ = self.make_request("/api/leaderboard?category=all")
-        self.assertEqual(status, 200)
-        self.assertEqual(len(all_board["top_players"]), 2)
-        self.assertEqual(all_board["top_players"][0]["name"], "سارا محمدی")
-        self.assertEqual(all_board["top_players"][1]["name"], "علی رضایی")
+        self.assertEqual(status, 403)
+        self.assertNotIn('top_players', all_board)
 
     def test_05_admin_panel_api(self):
         # Unauthorized check

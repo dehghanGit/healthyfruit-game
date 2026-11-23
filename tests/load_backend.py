@@ -74,11 +74,11 @@ async def benchmark(port, users, rounds, concurrency, pace_rps):
             return await request_once(*args)
     phases = {
         'profile_burst': lambda i: ('/api/me', f'load-{i}', None),
-        'leaderboard_burst': lambda i: ('/api/leaderboard?category=all', f'load-{i}', None),
+        'leaderboard_burst': lambda i: ('/api/leaderboard', f'load-{i}', None),
         'score_burst': lambda i: ('/api/score', f'load-{i}', {'score': 50, 'healthy_cuts': 40, 'bonus_years': 10}),
         'mixed': lambda i: (
             ('/api/me', f'load-{i}', None) if i % 4 == 0 else
-            ('/api/leaderboard?category=all', f'load-{i}', None) if i % 4 == 1 else
+            ('/api/leaderboard', f'load-{i}', None) if i % 4 == 1 else
             ('/api/score', f'load-{i}', {'score': 30, 'healthy_cuts': 20, 'bonus_years': 0}) if i % 4 == 2 else
             ('/js/game-app.js', None, None)),
     }

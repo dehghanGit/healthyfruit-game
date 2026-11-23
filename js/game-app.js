@@ -1247,10 +1247,10 @@ const api = {
     },
 
     // دریافت داده‌های لیدربرد بر اساس مقطع
-    async fetchLeaderboard(category = 'all') {
+    async fetchLeaderboard() {
         if (typeof fetch === 'undefined') return null;
         try {
-            const res = await fetch(`/api/leaderboard?category=${encodeURIComponent(category)}`, {
+            const res = await fetch('/api/leaderboard', {
                 credentials: 'include'
             });
             if (!res.ok) return null;
@@ -2216,7 +2216,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const leaderboardLoading = document.getElementById('leaderboardLoading');
     const leaderboardEmpty = document.getElementById('leaderboardEmpty');
     const stickyUserRank = document.getElementById('stickyUserRank');
-    const leaderboardTabs = typeof document.querySelectorAll === 'function' ? document.querySelectorAll('.leaderboard-tabs .tab-btn') : [];
+    const leaderboardCategoryLabel = document.getElementById('leaderboardCategoryLabel');
 
     // المان‌های صفحه Game Over
     const finalScoreVal = document.getElementById('finalScoreVal');
@@ -2229,9 +2229,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let onRegisterSuccessCallback = null;
     let onRegisterCancelCallback = null;
-
-    // دسته‌بندی فعلی نمایش لیدربرد
-    let activeLeaderboardCategory = 'elementary';
 
     // تولید ۵ قلب در نوار وضعیت
     function renderHearts(totalHearts = 5, activeHearts = 5) {
@@ -2305,9 +2302,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if (user.school) metaParts.push(user.school);
             if (user.grade_class) metaParts.push(`کلاس ${user.grade_class}`);
             playerMeta.textContent = metaParts.length > 0 ? metaParts.join(' · ') : (user.is_anonymous ? 'حالت ناشناس' : '');
-            if (user.category && user.category !== 'anonymous') {
-                activeLeaderboardCategory = user.category;
-            }
         } else {
             playerProfileCard.hidden = true;
         }
@@ -2364,6 +2358,8 @@ document.addEventListener('DOMContentLoaded', () => {
             if (groupSchool) groupSchool.hidden = true;
             if (groupClass) groupClass.hidden = true;
         }
+        if (regSchool) regSchool.disabled = categoryKey === 'other';
+        if (regClass) regClass.disabled = categoryKey !== 'elementary';
     }
 
     // رویداد دکمه‌های مقطع تحصیلی در فرم
@@ -2380,8 +2376,8 @@ document.addEventListener('DOMContentLoaded', () => {
         sounds.playClick();
         const name = (regFullName.value || '').trim();
         const category = regCategory.value || 'elementary';
-        const school = (regSchool ? regSchool.value : '').trim();
-        const gradeClass = (regClass ? regClass.value : '').trim();
+        const school = category === 'other' ? '' : (regSchool ? regSchool.value : '').trim();
+        const gradeClass = category === 'elementary' ? (regClass ? regClass.value : '').trim() : '';
 
         if (!name) {
             if (registerError) {
@@ -2482,21 +2478,27 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // بارگذاری و نمایش لیدربرد
-    async function loadLeaderboard(category = 'elementary') {
-        activeLeaderboardCategory = category;
-
-        // بروزرسانی کلاس فعال تب‌ها
-        leaderboardTabs.forEach(tab => {
-            const cat = tab.getAttribute('data-cat');
-            tab.classList.toggle('active', cat === category);
-        });
+    async function loadLeaderboard() {
+        const user = api.currentUser;
+        const category = user && !user.is_anonymous ? user.category : null;
+        if (leaderboardCategoryLabel) leaderboardCategoryLabel.textContent = category ? `رتبه‌بندی ${user.category_fa}` : '';
 
         if (leaderboardLoading) leaderboardLoading.hidden = false;
         if (leaderboardList) leaderboardList.innerHTML = '';
         if (leaderboardEmpty) leaderboardEmpty.hidden = true;
         if (stickyUserRank) stickyUserRank.hidden = true;
 
-        const data = await api.fetchLeaderboard(category);
+        if (!category) {
+            if (leaderboardLoading) leaderboardLoading.hidden = true;
+            renderUserRankBanner(user ? { is_anonymous: true } : null);
+            if (leaderboardEmpty) {
+                leaderboardEmpty.textContent = 'برای مشاهده رتبه‌بندی، مشخصات و مقطع خود را ثبت کنید.';
+                leaderboardEmpty.hidden = false;
+            }
+            return;
+        }
+
+        const data = await api.fetchLeaderboard();
 
         if (leaderboardLoading) leaderboardLoading.hidden = true;
 
@@ -2633,22 +2635,9 @@ document.addEventListener('DOMContentLoaded', () => {
         `;
     }
 
-    // کلیک روی تب‌های لیدربرد
-    leaderboardTabs.forEach(tab => {
-        tab.addEventListener('click', () => {
-            sounds.playClick();
-            const cat = tab.getAttribute('data-cat');
-            loadLeaderboard(cat);
-        });
-    });
-
     function showLeaderboardModal() {
         sounds.playClick();
-        let targetCat = 'elementary';
-        if (api.currentUser && api.currentUser.category && api.currentUser.category !== 'anonymous') {
-            targetCat = api.currentUser.category;
-        }
-        loadLeaderboard(targetCat);
+        loadLeaderboard();
         leaderboardDialog.showModal();
     }
 
@@ -2744,9 +2733,6 @@ document.addEventListener('DOMContentLoaded', () => {
                         if (gameOverRankBox && gameOverRankDesc) {
                             if (result.rank_category) {
                                 gameOverRankDesc.textContent = `رتبه ${toPersianDigits(result.rank_category)} در مقطع تحصیلی (رکورد: ${toPersianDigits(result.best_score)} سال)`;
-                                gameOverRankBox.hidden = false;
-                            } else if (result.rank_overall) {
-                                gameOverRankDesc.textContent = `رتبه ${toPersianDigits(result.rank_overall)} در کل بازیکنان (رکورد: ${toPersianDigits(result.best_score)} سال)`;
                                 gameOverRankBox.hidden = false;
                             }
                         }

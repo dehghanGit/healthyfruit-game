@@ -215,7 +215,7 @@ class APIController:
         return None
 
     def calculate_ranks(self, player_id, category, best_score, last_active):
-        """Calculate user's rank in their category and overall among non-anonymous players."""
+        """Expose only the player's own category rank."""
         if not player_id or best_score <= 0 or category == "anonymous":
             return {"rank_category": None, "rank_overall": None, "total_category": 0, "total_overall": 0}
 
@@ -232,22 +232,11 @@ class APIController:
             cursor.execute("SELECT COUNT(*) FROM players WHERE category = ? AND is_anonymous = 0 AND best_score > 0", (category,))
             total_cat = cursor.fetchone()[0]
 
-            # Overall rank
-            cursor.execute("""
-                SELECT COUNT(*) + 1 FROM players
-                WHERE is_anonymous = 0 AND best_score > 0
-                AND (best_score > ? OR (best_score = ? AND last_active < ?) OR (best_score = ? AND last_active = ? AND id < ?))
-            """, (best_score, best_score, last_active, best_score, last_active, player_id))
-            rank_ovr = cursor.fetchone()[0]
-
-            cursor.execute("SELECT COUNT(*) FROM players WHERE is_anonymous = 0 AND best_score > 0")
-            total_ovr = cursor.fetchone()[0]
-
             return {
                 "rank_category": rank_cat,
-                "rank_overall": rank_ovr,
+                "rank_overall": None,
                 "total_category": total_cat,
-                "total_overall": total_ovr
+                "total_overall": 0
             }
 
     def is_admin_authenticated(self):
@@ -517,122 +506,57 @@ class APIController:
         }, set_cookie=new_cookie)
 
     def handle_get_leaderboard(self, query):
-        category = query.get("category", ["all"])[0]
-        limit = 10
+        token = self.parse_cookies().get("player_token")
+        player = self.get_player_by_token(token)
+        if not player or player["is_anonymous"]:
+            return self.send_json({"success": False, "error": "Register your grade group to view its leaderboard"}, 401)
 
-        cookies = self.parse_cookies()
-        token = cookies.get("player_token")
-        current_player = self.get_player_by_token(token)
+        category = player["category"]
+        requested = query.get("category", [category])
+        if any(value != category for value in requested):
+            return self.send_json({"success": False, "error": "Only your own grade group leaderboard is available"}, 403)
 
         with get_db() as conn:
-            cursor = conn.cursor()
-
-            # Query for top 10 (exclude 0-score players and anonymous from official ranks)
-            if category in ["elementary", "middle", "high", "other"]:
-                cursor.execute("""
-                    SELECT id, name, category, school, grade_class, best_score, last_active
-                    FROM players
-                    WHERE category = ? AND is_anonymous = 0 AND best_score > 0
-                    ORDER BY best_score DESC, last_active ASC, id ASC
-                    LIMIT ?
-                """, (category, limit))
-            else:
-                cursor.execute("""
-                    SELECT id, name, category, school, grade_class, best_score, last_active
-                    FROM players
-                    WHERE is_anonymous = 0 AND best_score > 0
-                    ORDER BY best_score DESC, last_active ASC, id ASC
-                    LIMIT ?
-                """, (limit,))
-
-            rows = cursor.fetchall()
-
-            top_players = []
-            for rank_idx, row in enumerate(rows, start=1):
-                top_players.append({
-                    "rank": rank_idx,
-                    "id": row["id"],
-                    "name": row["name"],
-                    "category": row["category"],
-                    "category_fa": CATEGORY_MAP.get(row["category"], row["category"]),
-                    "school": row["school"],
-                    "grade_class": row["grade_class"],
-                    "best_score": row["best_score"],
-                    "last_active": row["last_active"],
-                    "is_current_user": bool(current_player and current_player["id"] == row["id"])
-                })
-
-            # Calculate user's rank
-            user_rank_info = None
-            if current_player:
-                is_anon = bool(current_player["is_anonymous"])
-                if is_anon:
-                    user_rank_info = {
-                        "id": current_player["id"],
-                        "name": current_player["name"],
-                        "is_anonymous": True,
-                        "best_score": current_player["best_score"],
-                        "rank": None,
-                        "message": "برای محاسبه رتبه در جدول، نام و مقطع خود را انتخاب کنید."
-                    }
-                else:
-                    user_cat = current_player["category"]
-                    # If looking at specific category
-                    target_cat = category if category in ["elementary", "middle", "high", "other"] else None
-
-                    if target_cat:
-                        if target_cat == user_cat:
-                            cursor.execute("""
-                                SELECT COUNT(*) + 1 FROM players
-                                WHERE category = ? AND is_anonymous = 0 AND best_score > 0
-                                AND (best_score > ? OR (best_score = ? AND last_active < ?) OR (best_score = ? AND last_active = ? AND id < ?))
-                            """, (user_cat, current_player["best_score"], current_player["best_score"], current_player["last_active"], current_player["best_score"], current_player["last_active"], current_player["id"]))
-                            rank = cursor.fetchone()[0]
-                            cursor.execute("SELECT COUNT(*) FROM players WHERE category = ? AND is_anonymous = 0 AND best_score > 0", (user_cat,))
-                            total = cursor.fetchone()[0]
-                        else:
-                            rank = None
-                            total = 0
-                    else:
-                        cursor.execute("""
-                            SELECT COUNT(*) + 1 FROM players
-                            WHERE is_anonymous = 0 AND best_score > 0
-                            AND (best_score > ? OR (best_score = ? AND last_active < ?) OR (best_score = ? AND last_active = ? AND id < ?))
-                        """, (current_player["best_score"], current_player["best_score"], current_player["last_active"], current_player["best_score"], current_player["last_active"], current_player["id"]))
-                        rank = cursor.fetchone()[0]
-                        cursor.execute("SELECT COUNT(*) FROM players WHERE is_anonymous = 0 AND best_score > 0")
-                        total = cursor.fetchone()[0]
-
-                    in_top_10 = any(p["id"] == current_player["id"] for p in top_players)
-
-                    user_rank_info = {
-                        "id": current_player["id"],
-                        "name": current_player["name"],
-                        "category": user_cat,
-                        "category_fa": CATEGORY_MAP.get(user_cat, user_cat),
-                        "school": current_player["school"],
-                        "grade_class": current_player["grade_class"],
-                        "best_score": current_player["best_score"],
-                        "rank": rank if current_player["best_score"] > 0 else None,
-                        "total_in_pool": total,
-                        "in_top_10": in_top_10,
-                        "is_anonymous": False
-                    }
-
-            # Total players in this view
-            if category in ["elementary", "middle", "high", "other"]:
-                cursor.execute("SELECT COUNT(*) FROM players WHERE category = ? AND is_anonymous = 0 AND best_score > 0", (category,))
-            else:
-                cursor.execute("SELECT COUNT(*) FROM players WHERE is_anonymous = 0 AND best_score > 0")
-            total_players = cursor.fetchone()[0]
-
+            rows = conn.execute("""
+                SELECT id, name, category, school, grade_class, best_score, last_active
+                FROM players
+                WHERE category = ? AND is_anonymous = 0 AND best_score > 0
+                ORDER BY best_score DESC, last_active ASC, id ASC
+                LIMIT 10
+            """, (category,)).fetchall()
+            total = conn.execute("SELECT COUNT(*) FROM players WHERE category = ? AND is_anonymous = 0 AND best_score > 0", (category,)).fetchone()[0]
+        ranks = self.calculate_ranks(player["id"], category, player["best_score"], player["last_active"])
+        top_players = [{
+            "rank": index,
+            "id": row["id"],
+            "name": row["name"],
+            "category": category,
+            "category_fa": CATEGORY_MAP.get(category, category),
+            "school": row["school"],
+            "grade_class": row["grade_class"],
+            "best_score": row["best_score"],
+            "last_active": row["last_active"],
+            "is_current_user": player["id"] == row["id"]
+        } for index, row in enumerate(rows, start=1)]
         return self.send_json({
             "success": True,
             "category": category,
-            "category_fa": CATEGORY_MAP.get(category, "همه رده‌ها"),
+            "category_fa": CATEGORY_MAP.get(category, category),
             "top_players": top_players,
-            "user_rank": user_rank_info,
-            "total_players": total_players
+            "user_rank": {
+                "id": player["id"],
+                "name": player["name"],
+                "category": category,
+                "category_fa": CATEGORY_MAP.get(category, category),
+                "school": player["school"],
+                "grade_class": player["grade_class"],
+                "best_score": player["best_score"],
+                "rank": ranks["rank_category"],
+                "total_in_pool": total,
+                "in_top_10": any(row["id"] == player["id"] for row in rows),
+                "is_anonymous": False
+            },
+            "total_players": total
         })
 
     # ---------------- Admin APIs ---------------- #

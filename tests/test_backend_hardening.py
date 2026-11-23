@@ -139,11 +139,47 @@ class BackendHardeningTest(unittest.TestCase):
         board = clients[2].get('/api/leaderboard').get_json()
         self.assertEqual(board['user_rank']['rank'], 3)
         self.assertEqual([p['rank'] for p in board['top_players']], [1, 2, 3])
-        self.assertEqual(clients[2].get('/api/me').get_json()['player']['rank_overall'], 3)
+        self.assertEqual(clients[2].get('/api/me').get_json()['player']['rank_category'], 3)
+        self.assertIsNone(clients[2].get('/api/me').get_json()['player']['rank_overall'])
         anonymous = self.app.test_client()
         result = anonymous.post('/api/score', json={'score': 10}).get_json()
         self.assertIsNone(result['rank_overall'])
         self.assertIsNone(anonymous.get('/api/me').get_json()['player']['rank_category'])
+
+    def test_leaderboard_is_restricted_to_authenticated_players_own_group(self):
+        self.assertEqual(self.client.get('/api/leaderboard').status_code, 401)
+        self.client.post('/api/score', json={'score': 10})
+        self.assertEqual(self.client.get('/api/leaderboard?category=other').status_code, 401)
+        clients = {}
+        for category in ['elementary', 'middle', 'high', 'other']:
+            client = self.app.test_client()
+            result = client.post('/api/register', json={
+                'name': category, 'category': category, 'school': 'School', 'grade_class': '6'
+            })
+            self.assertEqual(result.status_code, 200)
+            player = result.get_json()['player']
+            if category == 'other':
+                self.assertEqual(player['school'], '')
+                self.assertEqual(player['grade_class'], '')
+            client.post('/api/score', json={'score': 10})
+            clients[category] = client
+        for category, client in clients.items():
+            for path in ['/api/leaderboard', '/api/leaderboard?category=' + category]:
+                board = client.get(path).get_json()
+                self.assertEqual(board['category'], category)
+                self.assertEqual(board['total_players'], 1)
+                self.assertEqual([p['category'] for p in board['top_players']], [category])
+                self.assertEqual(board['user_rank']['rank'], 1)
+            for forbidden in ['all', 'invalid'] + [c for c in clients if c != category]:
+                denied = client.get('/api/leaderboard?category=' + forbidden)
+                self.assertEqual(denied.status_code, 403)
+                self.assertNotIn('top_players', denied.get_json())
+            self.assertEqual(client.get('/api/leaderboard?category=' + category + '&category=all').status_code, 403)
+        zero = self.app.test_client()
+        self.register(zero, name='No games yet')
+        board = zero.get('/api/leaderboard').get_json()
+        self.assertEqual(board['total_players'], 1)
+        self.assertIsNone(board['user_rank']['rank'])
 
     def test_admin_auth_expiry_logout_and_rate_limit(self):
         self.assertEqual(self.client.get('/api/admin/players').status_code, 401)
