@@ -43,7 +43,7 @@ export class GameEngine {
         // سیستم موج‌دهی و زمان‌بندی
         this.lastTime = 0;
         this.spawnTimer = 0;
-        this.spawnInterval = 2.4; // ثانیه
+        this.spawnInterval = 2.2; // ثانیه
         this.difficultyTimer = 0;
         this.screenShake = 0;
 
@@ -465,8 +465,9 @@ export class GameEngine {
     }
 
     spawnSingleFood(curveType, waveIndex = 0, totalInWave = 1) {
-        // شانس ایجاد غذای ناسالم (حدود ۳۰ تا ۳۵ درصد)
-        const isUnhealthy = Math.random() < 0.32;
+        // A gentle ramp keeps healthy foods in the majority throughout a run.
+        const unhealthyChance = 0.36 + Math.min(0.04, this.healthyCuts * 0.0008);
+        const isUnhealthy = Math.random() < unhealthyChance;
         const catalog = isUnhealthy ? FOOD_DATABASE.unhealthy : FOOD_DATABASE.healthy;
         const data = { ...catalog[Math.floor(Math.random() * catalog.length)], type: isUnhealthy ? 'unhealthy' : 'healthy' };
 
@@ -640,7 +641,7 @@ export class GameEngine {
         if (this.state === 'PLAYING') {
             this.spawnTimer += deltaTime;
             // با افزایش امتیاز، فاصله پرتاب غذاها به تدریج کاهش می‌یابد (سرعت و هیجان بیشتر)
-            const currentInterval = Math.max(1.3, this.spawnInterval - Math.min(1.0, this.healthyCuts * 0.015));
+            const currentInterval = Math.max(1.3, this.spawnInterval - Math.min(0.9, this.healthyCuts * 0.015));
 
             if (this.spawnTimer >= currentInterval) {
                 this.spawnTimer = 0;
