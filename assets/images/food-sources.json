@@ -1,0 +1,228 @@
+{
+  "generation": "Built-in image_gen; transparent 6x6 sheet",
+  "source": "assets/source/food-grid-6x6.png",
+  "prompt": "assets/source/food-grid-prompt.txt",
+  "splitScript": "C:/Users/extreme/Workspace/WordWeb/split_6x6_objects.py",
+  "splitOptions": {
+    "padding": 6,
+    "minDetectedPixels": 8
+  },
+  "objects": [
+    {
+      "id": "apple",
+      "row": 1,
+      "column": 1,
+      "image": "assets/images/apple.png"
+    },
+    {
+      "id": "banana",
+      "row": 1,
+      "column": 2,
+      "image": "assets/images/banana.png"
+    },
+    {
+      "id": "broccoli",
+      "row": 1,
+      "column": 3,
+      "image": "assets/images/broccoli.png"
+    },
+    {
+      "id": "carrot",
+      "row": 1,
+      "column": 4,
+      "image": "assets/images/carrot.png"
+    },
+    {
+      "id": "cucumber",
+      "row": 1,
+      "column": 5,
+      "image": "assets/images/cucumber.png"
+    },
+    {
+      "id": "egg",
+      "row": 1,
+      "column": 6,
+      "image": "assets/images/egg.png"
+    },
+    {
+      "id": "fish",
+      "row": 2,
+      "column": 1,
+      "image": "assets/images/fish.png"
+    },
+    {
+      "id": "lemon",
+      "row": 2,
+      "column": 2,
+      "image": "assets/images/lemon.png"
+    },
+    {
+      "id": "milk",
+      "row": 2,
+      "column": 3,
+      "image": "assets/images/milk.png"
+    },
+    {
+      "id": "orange",
+      "row": 2,
+      "column": 4,
+      "image": "assets/images/orange.png"
+    },
+    {
+      "id": "pineapple",
+      "row": 2,
+      "column": 5,
+      "image": "assets/images/pineapple.png"
+    },
+    {
+      "id": "salad",
+      "row": 2,
+      "column": 6,
+      "image": "assets/images/salad.png"
+    },
+    {
+      "id": "strawberry",
+      "row": 3,
+      "column": 1,
+      "image": "assets/images/strawberry.png"
+    },
+    {
+      "id": "tomato",
+      "row": 3,
+      "column": 2,
+      "image": "assets/images/tomato.png"
+    },
+    {
+      "id": "watermelon",
+      "row": 3,
+      "column": 3,
+      "image": "assets/images/watermelon.png"
+    },
+    {
+      "id": "pomegranate",
+      "row": 3,
+      "column": 4,
+      "image": "assets/images/pomegranate.png"
+    },
+    {
+      "id": "almond",
+      "row": 3,
+      "column": 5,
+      "image": "assets/images/almond.png"
+    },
+    {
+      "id": "cheese",
+      "row": 3,
+      "column": 6,
+      "image": "assets/images/cheese.png"
+    },
+    {
+      "id": "walnut",
+      "row": 4,
+      "column": 1,
+      "image": "assets/images/walnut.png"
+    },
+    {
+      "id": "doogh",
+      "row": 4,
+      "column": 2,
+      "image": "assets/images/doogh.png"
+    },
+    {
+      "id": "burger",
+      "row": 4,
+      "column": 3,
+      "image": "assets/images/burger.png"
+    },
+    {
+      "id": "fries",
+      "row": 4,
+      "column": 4,
+      "image": "assets/images/fries.png"
+    },
+    {
+      "id": "soda",
+      "row": 4,
+      "column": 5,
+      "image": "assets/images/soda.png"
+    },
+    {
+      "id": "candy",
+      "row": 4,
+      "column": 6,
+      "image": "assets/images/candy.png"
+    },
+    {
+      "id": "pizza",
+      "row": 5,
+      "column": 1,
+      "image": "assets/images/pizza.png"
+    },
+    {
+      "id": "hotdog",
+      "row": 5,
+      "column": 2,
+      "image": "assets/images/hotdog.png"
+    },
+    {
+      "id": "chips",
+      "row": 5,
+      "column": 3,
+      "image": "assets/images/chips.png"
+    },
+    {
+      "id": "cake",
+      "row": 5,
+      "column": 4,
+      "image": "assets/images/cake.png"
+    },
+    {
+      "id": "cookie",
+      "row": 5,
+      "column": 5,
+      "image": "assets/images/cookie.png"
+    },
+    {
+      "id": "icecream",
+      "row": 5,
+      "column": 6,
+      "image": "assets/images/icecream.png"
+    },
+    {
+      "id": "lavashak",
+      "row": 6,
+      "column": 1,
+      "image": "assets/images/lavashak.png"
+    },
+    {
+      "id": "cheese-puffs",
+      "row": 6,
+      "column": 2,
+      "image": "assets/images/cheese-puffs.png"
+    },
+    {
+      "id": "smarties",
+      "row": 6,
+      "column": 3,
+      "image": "assets/images/smarties.png"
+    },
+    {
+      "id": "chocolate",
+      "row": 6,
+      "column": 4,
+      "image": "assets/images/chocolate.png"
+    },
+    {
+      "id": "salt",
+      "row": 6,
+      "column": 5,
+      "image": "assets/images/salt.png"
+    },
+    {
+      "id": "lollipop",
+      "row": 6,
+      "column": 6,
+      "image": "assets/images/lollipop.png"
+    }
+  ]
+}

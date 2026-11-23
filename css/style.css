@@ -1,0 +1,1608 @@
+/* استایل بازی «نبرد سلامت» - طراحی با ظرافت و پشتیبانی کامل فارسی (RTL) */
+@import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700;800;900&display=swap');
+
+:root {
+    --font-main: 'Vazirmatn', 'Shabnam', Tahoma, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --color-primary: #00e676;
+    --color-primary-glow: rgba(0, 230, 118, 0.45);
+    --color-danger: #ff1744;
+    --color-danger-glow: rgba(255, 23, 68, 0.55);
+    --color-gold: #ffca28;
+    --color-gold-glow: rgba(255, 202, 40, 0.4);
+    --bg-overlay: rgba(18, 11, 7, 0.88);
+    --bg-card: rgba(30, 18, 12, 0.94);
+    --border-gold: rgba(255, 202, 40, 0.35);
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-tap-highlight-color: transparent;
+}
+
+html, body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background-color: #0c0704;
+    font-family: var(--font-main);
+    direction: rtl;
+    color: #ffffff;
+    touch-action: none; /* جلوگیری از اسکرول صفحه هنگام کشیدن انگشت */
+}
+
+/* بوم نقاشی بازی */
+#gameCanvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+    display: block;
+    cursor: crosshair;
+}
+
+/* فلاش اخطار سکته قلبی (Red Screen Flash Vignette) */
+#screenFlash {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 5;
+    opacity: 0;
+    background: radial-gradient(ellipse at center, transparent 45%, rgba(255, 23, 68, 0.65) 100%);
+    transition: opacity 0.08s ease-out;
+}
+
+#screenFlash.active {
+    opacity: 1;
+    animation: flashFade 0.5s ease-out forwards;
+}
+
+@keyframes flashFade {
+    0% { opacity: 1; }
+    100% { opacity: 0; }
+}
+
+/* نوار وضعیت بالای صفحه (HUD Bar) */
+#hudBar {
+    position: absolute;
+    top: 16px;
+    left: 20px;
+    right: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    z-index: 10;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+}
+
+#hudBar.hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.hud-panel {
+    background: rgba(24, 15, 10, 0.94);
+    border: 1px solid var(--border-gold);
+    border-radius: 18px;
+    padding: 8px 18px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5), inset 0 1px 1px rgba(255, 255, 255, 0.1);
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    pointer-events: auto;
+}
+
+/* بخش امتیاز */
+.score-box {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.score-badge {
+    font-size: 24px;
+}
+
+.score-content {
+    display: flex;
+    flex-direction: column;
+}
+
+.score-label {
+    font-size: 11px;
+    color: #e0d0c0;
+    font-weight: 500;
+}
+
+.score-number {
+    font-size: 26px;
+    font-weight: 900;
+    color: var(--color-gold);
+    line-height: 1.1;
+    text-shadow: 0 0 12px var(--color-gold-glow);
+}
+
+.high-score-box {
+    border-right: 1px solid rgba(255, 255, 255, 0.15);
+    padding-right: 14px;
+}
+
+.high-score-number {
+    font-size: 16px;
+    color: #a5d6a7;
+    font-weight: 700;
+}
+
+/* بخش قلب‌ها (سلامت و ضربان) */
+.hearts-box {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.hearts-label {
+    font-size: 13px;
+    font-weight: 700;
+    color: #ff8a80;
+    margin-left: 4px;
+}
+
+.hearts-list {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.heart-icon {
+    width: 32px;
+    height: 32px;
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+    transition: transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.heart-svg {
+    width: 100%;
+    height: 100%;
+}
+
+.heart-base {
+    fill: #ff1744;
+    filter: drop-shadow(0 0 6px rgba(255, 23, 68, 0.75));
+    transition: fill 0.3s ease, filter 0.3s ease;
+}
+
+.heart-crack {
+    fill: none;
+    stroke: transparent;
+    stroke-width: 2.2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    transition: stroke 0.2s ease;
+}
+
+/* ضربان قلب زنده */
+.heart-icon.active {
+    animation: heartPulse 1.4s infinite ease-in-out;
+}
+
+.heart-icon.active:nth-child(2) { animation-delay: 0.1s; }
+.heart-icon.active:nth-child(3) { animation-delay: 0.2s; }
+.heart-icon.active:nth-child(4) { animation-delay: 0.3s; }
+.heart-icon.active:nth-child(5) { animation-delay: 0.4s; }
+
+@keyframes heartPulse {
+    0%, 100% { transform: scale(1); }
+    15% { transform: scale(1.16); }
+    30% { transform: scale(1.02); }
+    45% { transform: scale(1.12); }
+    60% { transform: scale(1); }
+}
+
+/* انیمیشن سکته قلبی و خرد شدن قلب */
+.heart-icon.stroke-anim {
+    animation: heartStrokeExplosion 0.6s ease-out forwards;
+}
+
+@keyframes heartStrokeExplosion {
+    0% { transform: scale(1); }
+    25% { transform: scale(1.45) rotate(-15deg); }
+    50% { transform: scale(1.3) rotate(15deg); }
+    75% { transform: scale(0.85); }
+    100% { transform: scale(0.9); }
+}
+
+.heart-icon.broken .heart-base {
+    fill: #424242;
+    filter: none;
+    opacity: 0.45;
+}
+
+.heart-icon.broken .heart-crack {
+    stroke: #212121;
+}
+
+.heart-icon.stroke-anim .heart-crack {
+    stroke: #ffea00;
+}
+
+
+
+.hud-btn {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    color: #ffffff;
+    border-radius: 12px;
+    padding: 8px 14px;
+    font-family: var(--font-main);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.hud-btn:hover {
+    background: rgba(255, 255, 255, 0.18);
+    border-color: var(--color-gold);
+    transform: translateY(-1px);
+}
+
+.hud-btn:active {
+    transform: translateY(1px);
+}
+
+/* صفحه شروع بازی (Start Screen) */
+#startScreen {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 8;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: center;
+    padding-top: 5vh;
+    pointer-events: none;
+    transition: opacity 0.4s ease, transform 0.4s ease;
+}
+
+#startScreen.hidden {
+    opacity: 0;
+    transform: scale(0.95);
+    pointer-events: none;
+}
+
+.start-header {
+    text-align: center;
+    max-width: 650px;
+    padding: 0 20px;
+}
+
+.start-badge {
+    display: inline-block;
+    padding: 6px 18px;
+    background: rgba(0, 230, 118, 0.15);
+    border: 1px solid var(--color-primary);
+    border-radius: 50px;
+    font-size: 13px;
+    color: #b9f6ca;
+    font-weight: 700;
+    margin-bottom: 12px;
+    box-shadow: 0 0 15px var(--color-primary-glow);
+}
+
+.game-title {
+    font-size: clamp(38px, 6vw, 68px);
+    font-weight: 900;
+    background: linear-gradient(135deg, #ffffff 20%, #ffca28 60%, #00e676 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-shadow: 0 6px 30px rgba(0, 0, 0, 0.8);
+    letter-spacing: -1px;
+    margin-bottom: 8px;
+}
+
+.game-subtitle {
+    font-size: clamp(14px, 2vw, 19px);
+    color: #e0d0c0;
+    font-weight: 400;
+    line-height: 1.6;
+}
+
+.start-rules-card {
+    margin-top: 22px;
+    background: rgba(24, 15, 10, 0.82);
+    backdrop-filter: blur(10px);
+    border: 1px solid var(--border-gold);
+    border-radius: 20px;
+    padding: 16px 24px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    max-width: 520px;
+}
+
+.rules-icon {
+    font-size: 30px;
+}
+
+.rules-text {
+    font-size: 13.5px;
+    color: #f5f5f5;
+    line-height: 1.5;
+}
+
+.rules-text strong {
+    color: var(--color-gold);
+}
+
+.start-actions {
+    margin-top: 20px;
+    display: flex;
+    gap: 12px;
+    pointer-events: auto;
+}
+
+.start-btn {
+    background: rgba(255, 202, 40, 0.18);
+    border: 1px solid var(--color-gold);
+    color: #ffffff;
+    font-family: var(--font-main);
+    font-size: 14px;
+    font-weight: 700;
+    padding: 10px 22px;
+    border-radius: 14px;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+}
+
+.start-btn:hover {
+    background: var(--color-gold);
+    color: #1a0e08;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px var(--color-gold-glow);
+}
+
+/* پیام آموزشی شناور پایین (Health Toast) */
+#healthToast {
+    position: absolute;
+    top: 94px;
+    bottom: auto;
+    left: 50%;
+    transform: translateX(-50%) translateY(-12px);
+    background: rgba(20, 30, 20, 0.96);
+    border: 1px solid var(--color-primary);
+    border-radius: 16px;
+    padding: 9px 14px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+    z-index: 10;
+    pointer-events: none;
+    opacity: 0;
+    transition: all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    max-width: 480px;
+    width: 90%;
+    text-align: center;
+}
+
+#healthToast.visible {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+}
+
+#healthToast.warning-toast {
+    background: rgba(45, 12, 16, 0.94);
+    border-color: var(--color-danger);
+    box-shadow: 0 10px 30px var(--color-danger-glow);
+}
+
+#toastTitle {
+    font-size: 17px;
+    font-weight: 800;
+    color: var(--color-primary);
+    margin-bottom: 3px;
+}
+
+#healthToast.warning-toast #toastTitle {
+    color: var(--color-danger);
+}
+
+#toastDesc {
+    font-size: 15px;
+    color: #e0e0e0;
+    line-height: 1.4;
+}
+
+/* دیالوگ‌های مدال مدرن (Modern Web Guidance Compliance) */
+dialog:modal {
+    overscroll-behavior: contain;
+}
+
+dialog::backdrop {
+    overflow: hidden;
+    overscroll-behavior: contain;
+    background: rgba(5, 3, 2, 0.78);
+    backdrop-filter: blur(6px);
+}
+
+dialog[open] {
+    border: none;
+    background: transparent;
+    padding: 0;
+    margin: auto;
+    position: fixed;
+    inset: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 100;
+}
+
+.modal-content {
+    background: var(--bg-card);
+    border: 1.5px solid var(--border-gold);
+    border-radius: 26px;
+    padding: 32px 36px;
+    max-width: 500px;
+    width: 90vw;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8), inset 0 1px 1px rgba(255, 255, 255, 0.15);
+    text-align: center;
+    animation: modalPop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes modalPop {
+    from { transform: scale(0.85); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+}
+
+.modal-title {
+    font-size: 26px;
+    font-weight: 900;
+    color: var(--color-gold);
+    margin-bottom: 12px;
+}
+
+.gameover-title {
+    color: var(--color-danger);
+    text-shadow: 0 0 15px var(--color-danger-glow);
+}
+
+.modal-text {
+    font-size: 14.5px;
+    color: #e0d0c0;
+    margin-bottom: 22px;
+    line-height: 1.6;
+}
+
+/* نتایج پایان بازی */
+.gameover-stats {
+    background: rgba(0, 0, 0, 0.4);
+    border-radius: 18px;
+    padding: 16px;
+    display: flex;
+    justify-content: space-around;
+    margin-bottom: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.stat-item {
+    display: flex;
+    flex-direction: column;
+}
+
+.stat-label {
+    font-size: 12px;
+    color: #b0bec5;
+    margin-bottom: 4px;
+}
+
+.stat-val {
+    font-size: 28px;
+    font-weight: 900;
+    color: var(--color-gold);
+}
+
+.tip-banner {
+    background: rgba(0, 230, 118, 0.1);
+    border-right: 4px solid var(--color-primary);
+    padding: 12px 16px;
+    border-radius: 10px;
+    margin-bottom: 24px;
+    text-align: right;
+    font-size: 13px;
+    color: #c8e6c9;
+    line-height: 1.5;
+}
+
+/* دکمه‌های دیالوگ */
+.modal-actions {
+    display: flex;
+    justify-content: center;
+    gap: 14px;
+    flex-wrap: wrap;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #00e676, #00b0ff);
+    color: #0b1f14;
+    border: none;
+    font-family: var(--font-main);
+    font-size: 15px;
+    font-weight: 800;
+    padding: 12px 28px;
+    border-radius: 16px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 6px 20px rgba(0, 230, 118, 0.4);
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 26px rgba(0, 230, 118, 0.6);
+}
+
+.btn-secondary {
+    background: rgba(255, 255, 255, 0.1);
+    color: #ffffff;
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    font-family: var(--font-main);
+    font-size: 14px;
+    font-weight: 600;
+    padding: 12px 22px;
+    border-radius: 16px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-secondary:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+/* دیالوگ راهنمای بازی (Guide Modal) */
+.guide-modal-content {
+    max-width: 820px;
+    max-height: 85vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.guide-scroll {
+    overflow-y: auto;
+    padding-right: 8px;
+    margin: 18px 0;
+    max-height: 55vh;
+}
+
+.guide-scroll::-webkit-scrollbar {
+    width: 6px;
+}
+
+.guide-scroll::-webkit-scrollbar-thumb {
+    background: var(--color-gold);
+    border-radius: 10px;
+}
+
+.guide-section-title {
+    font-size: 17px;
+    font-weight: 800;
+    margin: 14px 0 10px 0;
+    text-align: right;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.healthy-title { color: var(--color-primary); }
+.unhealthy-title { color: var(--color-danger); }
+
+.guide-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 12px;
+    margin-bottom: 18px;
+}
+
+.guide-card {
+    background: rgba(0, 0, 0, 0.35);
+    border-radius: 14px;
+    padding: 10px 14px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    text-align: right;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.guide-card.healthy-card {
+    border-right: 3px solid var(--color-primary);
+}
+
+.guide-card.unhealthy-card {
+    border-right: 3px solid var(--color-danger);
+}
+
+.guide-item-img {
+    width: 48px;
+    height: 48px;
+    object-fit: contain;
+    filter: drop-shadow(0 2px 5px rgba(0,0,0,0.5));
+}
+
+.guide-item-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.guide-item-info strong {
+    font-size: 14px;
+    color: #ffffff;
+}
+
+.guide-cat {
+    font-size: 11px;
+    color: #81c784;
+}
+
+.guide-cat.danger-tag {
+    color: #ff8a80;
+}
+
+.guide-benefit {
+    font-size: 11px;
+    color: #b0bec5;
+    line-height: 1.35;
+}
+
+.guide-harm {
+    font-size: 11px;
+    color: #ffab91;
+    line-height: 1.35;
+}
+
+/* ریسپانسیو برای موبایل و تبلت */
+@media (max-width: 768px) {
+    #hudBar {
+        top: 10px;
+        left: 10px;
+        right: 10px;
+        flex-direction: column;
+        gap: 8px;
+        align-items: stretch;
+    }
+
+    .hud-panel {
+        justify-content: space-between;
+        padding: 6px 14px;
+    }
+
+    .score-number {
+        font-size: 22px;
+    }
+
+    .heart-icon {
+        width: 26px;
+        height: 26px;
+    }
+
+    .game-title {
+        font-size: 38px;
+    }
+
+    .modal-content {
+        padding: 24px 20px;
+    }
+
+    .guide-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Compact, opaque information panels keep canvas compositing inexpensive. */
+.game-note {
+    position: absolute;
+    bottom: 5px;
+    left: 5%;
+    width: 90%;
+    z-index: 11;
+    font-size: 10px;
+    text-align: center;
+    color: #b6b0a7;
+    pointer-events: none;
+}
+.game-note a { color: #c8e6c9; pointer-events: auto; }
+#gameOverDialog .modal-content {
+    max-width: 600px;
+    max-height: 90dvh;
+    overflow-y: auto;
+}
+.life-summary { font-size: 14px; line-height: 1.9; margin-bottom: 16px; color: #c8e6c9; }
+.loss-history { text-align: right; background: #251716; border-radius: 12px; padding: 14px; margin-bottom: 16px; }
+.loss-history h3 { font-size: 15px; color: #ffab91; margin-bottom: 8px; }
+#deathReasons { padding-inline-start: 22px; }
+#deathReasons li { padding: 6px 0; font-size: 13px; }
+#deathReasons p { font-size: 12px; line-height: 1.6; color: #d4c3bc; }
+@media (max-width: 768px) {
+    #healthToast { top: 134px; padding: 9px 12px; }
+    #toastTitle { font-size: 16px; }
+    #toastDesc { font-size: 15px; }
+    #startScreen { padding-top: 3vh; }
+    .start-rules-card { margin-top: 12px; padding: 10px 14px; }
+    .rules-text { font-size: 12px; }
+    .game-note { font-size: 9px; }
+}
+@media (max-height: 540px) {
+    #startScreen { padding-top: 8px; }
+    .game-title { font-size: 30px; }
+    .start-badge { display: none; }
+    .start-rules-card { margin-top: 6px; padding: 6px 12px; max-width: 720px; }
+    .start-actions { margin-top: 8px; }
+    .game-subtitle { font-size: 12px; }
+}
+@media (max-width: 768px) and (max-height: 540px) {
+    #hudBar { flex-direction: row; gap: 4px; }
+    .hud-panel { padding: 5px 8px; gap: 6px; }
+    .hud-btn { padding: 6px; font-size: 11px; }
+    .hearts-label, .score-badge, .high-score-box { display: none; }
+    #healthToast { top: 130px; }
+}
+
+/* One small menu button keeps the play area clear. */
+.settings-toggle {
+    width: 38px; height: 38px; flex: 0 0 38px; align-self: center;
+    display: grid; place-items: center; border-radius: 12px;
+    color: #f4dbac; background: #201810; border: 1px solid var(--border-gold);
+    font-size: 24px; cursor: pointer; pointer-events: auto;
+}
+.settings-toggle:hover { background: #38291a; }
+.settings-toggle:focus-visible, .settings-option:focus-visible { outline: 2px solid #ffe082; outline-offset: 3px; }
+.settings-options { display: grid; gap: 8px; margin-bottom: 20px; }
+.settings-option {
+    padding: 13px 16px; text-align: right; border-radius: 12px;
+    background: #2b211a; color: #f4e5d0; border: 1px solid #53402b;
+    font: 600 14px var(--font-main); cursor: pointer;
+}
+.settings-option:hover { background: #3b2d21; }
+.settings-dialog .btn-primary { width: 100%; }
+.dialog-eyebrow { display: block; color: #baa98a; font-size: 12px; margin-bottom: 8px; }
+:is(#gameOverDialog, #deathDialog) .result-poster {
+    width: min(92vw, 480px); padding: 24px; border: 1px solid #615039;
+    background: #1c1913; border-radius: 24px;
+}
+.result-heading h2 { font-size: 21px; font-weight: 800; color: #f6e8cf; }
+.lifespan-hero { display: flex; flex-direction: column; align-items: center; padding: 14px 0 10px; }
+.life-sprout { font-size: 28px; }
+#finalScoreVal { font-size: clamp(56px, 11vw, 80px); color: #c7ee9c; line-height: 1.15; font-weight: 900; }
+.lifespan-unit { font-size: 15px; color: #e3dfd2; }
+.record-pill { margin-top: 12px; padding: 4px 12px; border: 1px solid #4a4533; border-radius: 20px; color: #c7baa0; font-size: 11px; }
+.life-result .life-summary { font-size: 13px; line-height: 1.7; margin: 0 0 14px; color: #c5c2b1; }
+.year-breakdown { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: #443d2d; border: 1px solid #443d2d; border-radius: 14px; overflow: hidden; margin-bottom: 18px; }
+.year-breakdown div { display: flex; flex-direction: column; gap: 3px; padding: 10px 4px; background: #25241a; }
+.year-breakdown strong { font-size: 23px; color: #bee394; direction: ltr; }
+.year-breakdown div:last-child strong { color: #f3a18c; }
+.year-breakdown span { font-size: 11px; color: #c6bfad; }
+.life-result .loss-history { background: transparent; padding: 0; margin-bottom: 16px; }
+.life-result .loss-history h3 { font-size: 13px; color: #d4c6b1; }
+.life-result #deathReasons { padding: 0; list-style: none; display: grid; gap: 5px; counter-reset: loss; }
+.life-result #deathReasons li { counter-increment: loss; position: relative; background: #29201b; border-radius: 9px; padding: 7px 34px 7px 10px; }
+.life-result #deathReasons li::before { content: '♡'; position: absolute; right: 12px; top: 10px; color: #e49482; font-size: 19px; }
+.life-result #deathReasons strong { font-size: 12px; color: #e8c6b9; }
+.life-result #deathReasons p { display: inline; font-size: 11px; margin-right: 8px; color: #b2a297; }
+.result-encouragement { font-size: 12px; line-height: 1.8; color: #babfa7; margin-bottom: 14px; }
+.result-retry { width: 100%; background: #c7ee9c; color: #203414; box-shadow: none; }
+.result-retry:hover { background: #d9f7b8; box-shadow: none; }
+.result-floating-actions {
+    position: fixed;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 16px);
+    left: 50%;
+    transform: translateX(-50%);
+    width: min(calc(100% - 32px), 440px);
+    z-index: 1;
+}
+.result-floating-actions .result-retry {
+    min-height: 50px;
+    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.45);
+}
+@media (max-width: 768px) {
+    #hudBar { display: grid; grid-template-columns: 1fr auto; gap: 7px; }
+    #hudBar > .hud-panel:first-child { grid-column: 1; grid-row: 1; }
+    #hudBar > .hud-panel:nth-child(2) { grid-column: 1 / -1; grid-row: 2; justify-content: center; }
+    .settings-toggle { grid-column: 2; grid-row: 1; }
+    #healthToast { top: 134px; }
+    :is(#gameOverDialog, #deathDialog) .result-poster { padding: 20px 16px; }
+}
+@media (max-height: 540px) {
+    #healthToast { top: 120px; }
+    :is(#gameOverDialog, #deathDialog) .result-poster { padding: 16px; }
+    .lifespan-hero { padding: 6px 0; }
+    .life-sprout { display: none; }
+    #finalScoreVal { font-size: 48px; }
+}
+
+/* Show the food message as one compact sentence, with a colored lead-in. */
+#toastTitle, #toastDesc { display: inline; font-size: 16px; line-height: 1.65; }
+#toastTitle { margin: 0; margin-inline-end: 5px; }
+#healthToast { text-align: right; }
+
+/* Keep the mobile status in one row, away from the swipe area. */
+.start-record { margin-top: 12px; font-size: 13px; color: #d6c8a7; }
+.start-record strong { color: #c7ee9c; }
+.life-hud { gap: 22px; }
+#hudBar.hidden .settings-toggle, #hudBar.hidden .hud-panel { pointer-events: none; }
+@media (max-width: 768px) {
+    #hudBar {
+        display: flex; flex-direction: row; align-items: center; gap: 8px;
+        top: calc(env(safe-area-inset-top, 0px) + 10px);
+        left: calc(env(safe-area-inset-left, 0px) + 10px);
+        right: calc(env(safe-area-inset-right, 0px) + 10px);
+    }
+    #hudBar .life-hud { flex: 1; min-width: 0; justify-content: space-between; gap: 8px; padding: 7px 10px; border-radius: 14px; }
+    .life-hud .high-score-box, .life-hud .hearts-label, .life-hud .score-badge { display: none; }
+    .life-hud .score-label { font-size: 10px; white-space: nowrap; }
+    .life-hud .score-number { font-size: 24px; }
+    .life-hud .hearts-list { gap: 3px; }
+    .life-hud .heart-icon { width: 23px; height: 23px; }
+    .heart-base { filter: none; }
+    .heart-icon.active { animation: none; }
+    .settings-toggle { width: 44px; height: 44px; flex-basis: 44px; }
+    #healthToast { top: calc(env(safe-area-inset-top, 0px) + 80px); width: calc(100% - 24px); padding: 8px 11px; border-radius: 12px; }
+    #toastTitle, #toastDesc { font-size: 15px; line-height: 1.6; }
+    #startScreen { padding-top: calc(env(safe-area-inset-top, 0px) + 14px); }
+    .start-rules-card { width: calc(100% - 28px); }
+    .start-rules-card, .start-header { max-width: 480px; }
+    .rules-icon { display: none; }
+    .game-subtitle { font-size: 13px; }
+    .start-actions { margin-top: 10px; }
+    .start-btn { min-height: 44px; padding: 8px 18px; }
+    dialog .modal-content { max-height: calc(100dvh - 24px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)); overflow-y: auto; touch-action: pan-y; }
+    .guide-scroll { touch-action: pan-y; }
+    .game-note { bottom: calc(env(safe-area-inset-bottom, 0px) + 4px); }
+}
+@media (max-width: 768px) and (max-height: 500px) {
+    #startScreen { padding-top: 6px; }
+    .start-header .game-title { font-size: 25px; margin-bottom: 2px; }
+    .start-header .game-subtitle { display: none; }
+    .start-rules-card { max-width: 620px; margin-top: 4px; padding: 5px 10px; }
+    .rules-text { font-size: 11px; }
+    .start-record { margin-top: 4px; font-size: 11px; }
+    .start-actions { margin-top: 4px; }
+}
+
+/* Reserve space above the fixed restart action, including mobile safe areas. */
+:is(#gameOverDialog, #deathDialog) .result-poster {
+    max-height: calc(100dvh - 120px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+    margin-bottom: 76px;
+    scroll-padding-bottom: 16px;
+}
+
+/* A short warning heading above the compact food description. */
+#toastHazard { color: #ff6577; font-size: 19px; font-weight: 900; line-height: 1.35; margin-bottom: 3px; }
+#toastHazard[hidden] { display: none; }
+#healthToast.warning-toast { padding-top: 7px; padding-bottom: 7px; }
+/* The result is a collectible arcade medal; all decoration is static. */
+:is(#gameOverDialog, #deathDialog) .result-poster {
+    --result-ink: #f7f8ff; --result-muted: #c4cff2;
+    width: min(92vw, 430px); padding: 22px 24px 0;
+    position: relative; isolation: isolate; text-align: center;
+    background: #253c88; color: var(--result-ink);
+    border: 2px solid #7188c6; border-radius: 28px;
+    box-shadow: 0 10px 0 #132456, 0 24px 70px #0007;
+    animation: result-arrive 220ms ease-out;
+}
+.poster-topline { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding-bottom: 15px; border-bottom: 1px solid #ffffff29; }
+.poster-brand { display: flex; align-items: center; gap: 7px; color: #fff; font-size: 15px; font-weight: 900; }
+.poster-brand svg { width: 25px; height: 25px; color: #ff8f88; }
+.poster-edition { color: #ccd7fc; font-size: 12px; }
+.life-result .result-heading { position: relative; margin-top: 19px; }
+.life-result .result-heading h2 { font-size: clamp(21px, 5.8vw, 27px); color: #fff; font-weight: 900; text-wrap: balance; }
+.new-record-badge { position: absolute; top: 52px; right: 50%; transform: translateX(50%) rotate(-6deg); z-index: 3; white-space: nowrap; padding: 4px 15px; border-radius: 6px; font-size: 13px; font-weight: 900; background: #fb8469; color: #351c1b; border: 2px solid #ffbea0; box-shadow: 0 3px 0 #913e37; }
+.new-record-badge[hidden] { display: none; }
+.life-result .lifespan-hero { position: relative; height: 232px; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 0; margin-top: 14px; }
+.medal-disc { position: absolute; width: 198px; height: 198px; top: 16px; left: calc(50% - 99px); z-index: -1; background: #ffdb76; border: 8px solid #e7a94e; outline: 2px solid #ffefb9; border-radius: 50%; box-shadow: inset 0 0 0 3px #fff1b7, 0 7px 0 #a56c39; }
+.medal-disc::after { content: ''; position: absolute; inset: 9px; border: 1px dashed #bb8742; border-radius: 50%; }
+.medal-caption { font-size: 12px; color: #6e4b29; font-weight: 700; margin-top: 4px; }
+.life-result #finalScoreVal { z-index: 1; max-width: 190px; font-size: clamp(58px, 19vw, 88px); font-weight: 900; line-height: 1.14; letter-spacing: -3px; color: #25386f; text-shadow: 0 3px 0 #fff1bb; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.life-result .lifespan-unit { color: #493820; font-size: 17px; font-weight: 800; }
+.result-fruit { position: absolute; object-fit: contain; pointer-events: none; z-index: 2; filter: drop-shadow(0 7px 4px #111b453f); }
+.fruit-apple { width: 96px; height: 108px; right: -5px; top: 117px; transform: rotate(15deg); }
+.fruit-banana { width: 108px; height: 108px; left: -10px; top: 101px; transform: rotate(-18deg); }
+.result-confetti { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: -2; }
+.life-result .record-pill { display: flex; align-items: center; justify-content: center; gap: 14px; margin: 0 auto 12px; width: fit-content; padding: 5px 15px; background: #1b306f; color: #d3dcfa; border: 1px solid #6b80b7; border-radius: 18px; font-size: 12px; }
+.life-result .record-pill b { color: #ffe391; }
+.life-result .life-summary { color: #d3dcfa; font-size: 12px; line-height: 1.7; margin-bottom: 15px; }
+.life-result .year-breakdown { display: grid; grid-template-columns: repeat(3, 1fr); border: none; background: #1b2f6c; gap: 0; border-radius: 13px; padding: 11px 0; margin-bottom: 12px; }
+.life-result .year-breakdown div { background: transparent; padding: 0 3px; }
+.life-result .year-breakdown div + div { border-inline-start: 1px solid #ffffff24; }
+.life-result .year-breakdown strong { color: #b8eccf; font-size: 24px; line-height: 1.3; }
+.life-result .year-breakdown div:nth-child(2) strong { color: #ffe391; }
+.life-result .year-breakdown div:last-child strong { color: #ffb7a7; }
+.life-result .year-breakdown span { color: #d3dcfa; font-size: 11px; }
+.life-result .result-encouragement { color: #d3dcfa; font-size: 12px; margin-bottom: 16px; line-height: 1.6; }
+.poster-footer { margin: 0 -24px; padding: 14px 12px 15px; color: #26376e; background: #e9edff; border-radius: 0 0 25px 25px; display: flex; flex-direction: column; gap: 5px; }
+.poster-footer strong { font-size: 14px; font-weight: 900; }
+.poster-footer > span { font-size: 10px; color: #4d5c86; }
+:is(#gameOverDialog, #deathDialog) .result-retry { background: #ffe08b; color: #283568; border: 1px solid #ffedb9; box-shadow: 0 4px 0 #b5813d, 0 10px 24px #0005; transition: transform 150ms ease, background-color 150ms ease; }
+:is(#gameOverDialog, #deathDialog) .result-retry:hover { background: #ffe9aa; transform: translateY(-1px); }
+.result-retry:focus-visible { outline: 3px solid #fff; outline-offset: 5px; }
+@keyframes result-arrive { from { transform: translateY(8px) scale(0.98); opacity: 0; } to { transform: translateY(0) scale(1); opacity: 1; } }
+@media (max-width: 360px) {
+    :is(#gameOverDialog, #deathDialog) .result-poster { padding-left: 16px; padding-right: 16px; }
+    .poster-footer { margin-left: -16px; margin-right: -16px; }
+    .fruit-apple { width: 78px; right: -9px; }
+    .fruit-banana { width: 86px; left: -12px; }
+    .poster-footer strong { font-size: 13px; }
+}
+@media (max-height: 740px) {
+    :is(#gameOverDialog, #deathDialog) .result-poster { padding-top: 15px; }
+    .poster-topline { padding-bottom: 10px; }
+    .life-result .result-heading { margin-top: 12px; }
+    .life-result .lifespan-hero { height: 210px; margin-top: 9px; }
+    .medal-disc { width: 180px; height: 180px; left: calc(50% - 90px); top: 12px; }
+    .fruit-apple { top: 100px; }
+    .fruit-banana { top: 90px; }
+    .new-record-badge { top: 43px; }
+    .life-result .life-summary { margin-bottom: 10px; }
+    .life-result .result-encouragement { margin-bottom: 12px; }
+    .poster-footer { padding-top: 11px; padding-bottom: 12px; }
+}
+@media (prefers-reduced-motion: reduce) {
+    :is(#gameOverDialog, #deathDialog) .result-poster { animation: none; }
+    :is(#gameOverDialog, #deathDialog) .result-retry { transition: none; }
+}
+
+@media (max-height: 740px) {
+    :is(#gameOverDialog, #deathDialog) .result-poster { overflow-x: hidden; }
+    .life-result .lifespan-hero { height: 184px; margin-top: 8px; }
+    .medal-disc { width: 158px; height: 158px; left: calc(50% - 79px); top: 12px; border-width: 6px; }
+    .life-result #finalScoreVal { font-size: 68px; }
+    .life-result .lifespan-unit { font-size: 15px; }
+    .medal-caption { font-size: 11px; }
+    .new-record-badge { top: 40px; font-size: 12px; }
+    .fruit-apple { width: 72px; height: 86px; top: 87px; right: 0; }
+    .fruit-banana { width: 82px; height: 86px; top: 80px; left: -4px; }
+    .life-result .result-encouragement { display: none; }
+    .life-result .year-breakdown { margin-bottom: 14px; }
+}
+
+/* ==========================================================================
+   بخش اختصاصی پروفایل بازیکن، فرم ثبت‌نام و جدول رتبه‌بندی (Leaderboard & Profile)
+   ========================================================================== */
+
+/* نشان پروفایل بازیکن در صفحه شروع */
+.player-profile-badge {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: rgba(255, 202, 40, 0.12);
+    border: 1px solid var(--border-gold);
+    border-radius: 16px;
+    padding: 10px 18px;
+    margin: 0 auto 16px;
+    max-width: 420px;
+    width: 90%;
+    backdrop-filter: blur(8px);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+    text-align: right;
+    animation: modalPop 0.3s ease;
+}
+
+.player-profile-badge[hidden] {
+    display: none !important;
+}
+
+.player-avatar {
+    font-size: 26px;
+    background: rgba(255, 202, 40, 0.2);
+    border-radius: 12px;
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.player-details {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.player-greeting {
+    font-size: 11px;
+    color: #ffca28;
+    font-weight: 500;
+}
+
+.player-name {
+    font-size: 15px;
+    font-weight: 800;
+    color: #ffffff;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.player-school-tag {
+    font-size: 11.5px;
+    color: #b0bec5;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.btn-profile-edit {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 10px;
+    color: #ffffff;
+    font-size: 14px;
+    width: 34px;
+    height: 34px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+}
+
+.btn-profile-edit:hover {
+    background: var(--color-gold);
+    color: #120b07;
+    transform: scale(1.08);
+}
+
+/* دکمه‌های صفحه شروع */
+.primary-start-btn {
+    background: linear-gradient(135deg, #00e676, #00b0ff) !important;
+    color: #0b1f14 !important;
+    border: none !important;
+    box-shadow: 0 4px 18px rgba(0, 230, 118, 0.45) !important;
+    font-size: 15px !important;
+}
+
+.primary-start-btn:hover {
+    transform: translateY(-2px) scale(1.02) !important;
+    box-shadow: 0 6px 24px rgba(0, 230, 118, 0.6) !important;
+}
+
+.leaderboard-btn {
+    background: rgba(255, 202, 40, 0.22) !important;
+    border: 1px solid #ffca28 !important;
+    color: #ffd54f !important;
+}
+
+.leaderboard-btn:hover {
+    background: #ffca28 !important;
+    color: #1a0e08 !important;
+    box-shadow: 0 6px 20px rgba(255, 202, 40, 0.4) !important;
+}
+
+/* دیالوگ ثبت مشخصات */
+.register-modal {
+    max-width: 480px;
+    text-align: right;
+    padding: 28px 30px;
+}
+
+.register-form {
+    margin-top: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    text-align: right;
+}
+
+.form-label {
+    font-size: 13.5px;
+    font-weight: 700;
+    color: #ffca28;
+}
+
+.form-input {
+    background: rgba(10, 6, 4, 0.7);
+    border: 1.5px solid rgba(255, 202, 40, 0.35);
+    border-radius: 12px;
+    padding: 11px 14px;
+    color: #ffffff;
+    font-family: var(--font-main);
+    font-size: 14.5px;
+    direction: rtl;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.form-input:focus {
+    border-color: #00e676;
+    box-shadow: 0 0 12px rgba(0, 230, 118, 0.3);
+}
+
+.form-input::placeholder {
+    color: #78909c;
+    font-size: 13px;
+}
+
+/* ردیف دکمه‌های مقطع تحصیلی: ابتدایی، متوسطه ۱، متوسطه دو، سایر */
+.category-buttons-group {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    width: 100%;
+}
+
+.stage-btn {
+    background: rgba(30, 20, 15, 0.9);
+    border: 1.5px solid rgba(255, 255, 255, 0.15);
+    border-radius: 12px;
+    color: #cfd8dc;
+    font-family: var(--font-main);
+    font-size: 13px;
+    font-weight: 700;
+    padding: 10px 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: center;
+}
+
+.stage-btn:hover {
+    border-color: #ffca28;
+    color: #ffffff;
+    background: rgba(255, 202, 40, 0.15);
+}
+
+.stage-btn.active {
+    background: linear-gradient(135deg, #ffca28, #ffa000);
+    color: #120b07;
+    border-color: #ffd54f;
+    box-shadow: 0 3px 12px rgba(255, 202, 40, 0.4);
+}
+
+/* بنر خطای فرم */
+.form-error-banner {
+    background: rgba(255, 23, 68, 0.15);
+    border: 1px solid var(--color-danger);
+    color: #ff8a80;
+    font-size: 13px;
+    padding: 9px 14px;
+    border-radius: 10px;
+    text-align: center;
+}
+
+.register-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.register-actions .btn-primary {
+    width: 100%;
+    padding: 12px;
+    font-size: 15px;
+}
+
+.btn-ghost {
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    color: #eceff1;
+    font-family: var(--font-main);
+    font-size: 13.5px;
+    font-weight: 600;
+    padding: 10px;
+    border-radius: 14px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-ghost:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: #ffffff;
+}
+
+/* ==========================================================================
+   دیالوگ لیدربورد (Leaderboard Dialog)
+   ========================================================================== */
+.leaderboard-modal {
+    max-width: 580px;
+    width: 94vw;
+    max-height: 88vh;
+    display: flex;
+    flex-direction: column;
+    padding: 24px 26px;
+    overflow: hidden;
+}
+
+.leaderboard-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 14px;
+    border-bottom: 1px solid rgba(255, 202, 40, 0.2);
+    padding-bottom: 12px;
+}
+
+.modal-close-btn {
+    background: rgba(255, 255, 255, 0.1);
+    border: none;
+    color: #ffffff;
+    font-size: 16px;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s;
+}
+
+.modal-close-btn:hover {
+    background: rgba(255, 23, 68, 0.8);
+}
+
+/* بنر وضعیت و رتبه کاربر */
+.user-rank-banner {
+    background: linear-gradient(135deg, rgba(35, 24, 18, 0.95), rgba(20, 14, 10, 0.95));
+    border: 1.5px solid var(--border-gold);
+    border-radius: 16px;
+    padding: 12px 18px;
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+}
+
+.user-rank-banner.highlight-rank {
+    border-color: #00e676;
+    background: linear-gradient(135deg, rgba(14, 38, 22, 0.95), rgba(8, 22, 14, 0.95));
+}
+
+.user-rank-info {
+    text-align: right;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.user-rank-title {
+    font-size: 12px;
+    color: #b0bec5;
+}
+
+.user-rank-name {
+    font-size: 15px;
+    font-weight: 800;
+    color: #ffffff;
+}
+
+.user-rank-school {
+    font-size: 11.5px;
+    color: #ffca28;
+}
+
+.user-rank-stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background: rgba(0, 0, 0, 0.35);
+    border-radius: 12px;
+    padding: 6px 14px;
+    min-width: 80px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.user-rank-number {
+    font-size: 20px;
+    font-weight: 900;
+    color: #ffca28;
+}
+
+.user-rank-stat-label {
+    font-size: 10px;
+    color: #90a4ae;
+}
+
+/* تب‌های مقاطع تحصیلی در لیدربرد */
+.leaderboard-tabs {
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    padding-bottom: 8px;
+    margin-bottom: 12px;
+    scrollbar-width: thin;
+}
+
+.tab-btn {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 12px;
+    color: #b0bec5;
+    font-family: var(--font-main);
+    font-size: 12.5px;
+    font-weight: 700;
+    padding: 8px 14px;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+}
+
+.tab-btn:hover {
+    color: #ffffff;
+    border-color: #ffca28;
+}
+
+.tab-btn.active {
+    background: #ffca28;
+    color: #120b07;
+    border-color: #ffd54f;
+    box-shadow: 0 2px 10px rgba(255, 202, 40, 0.35);
+}
+
+/* بدنه لیست لیدربرد */
+.leaderboard-body {
+    flex: 1;
+    overflow-y: auto;
+    padding-right: 4px;
+    margin-bottom: 8px;
+    min-height: 220px;
+    max-height: 380px;
+}
+
+.leaderboard-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.leaderboard-item {
+    display: flex;
+    align-items: center;
+    background: rgba(24, 15, 10, 0.85);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 14px;
+    padding: 10px 14px;
+    gap: 12px;
+    transition: transform 0.15s, border-color 0.15s;
+    text-align: right;
+}
+
+.leaderboard-item:hover {
+    border-color: rgba(255, 202, 40, 0.4);
+    transform: translateX(-2px);
+}
+
+.leaderboard-item.is-me {
+    background: linear-gradient(135deg, rgba(0, 230, 118, 0.15), rgba(0, 176, 255, 0.12));
+    border: 1.5px solid #00e676;
+    box-shadow: 0 4px 15px rgba(0, 230, 118, 0.25);
+}
+
+.rank-badge {
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.08);
+    color: #ffffff;
+    font-weight: 900;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.rank-badge.rank-1 {
+    background: linear-gradient(135deg, #ffd700, #ffb300);
+    color: #3e2723;
+    box-shadow: 0 2px 10px rgba(255, 215, 0, 0.4);
+    font-size: 16px;
+}
+
+.rank-badge.rank-2 {
+    background: linear-gradient(135deg, #e0e0e0, #9e9e9e);
+    color: #212121;
+    box-shadow: 0 2px 10px rgba(224, 224, 224, 0.3);
+    font-size: 16px;
+}
+
+.rank-badge.rank-3 {
+    background: linear-gradient(135deg, #cd7f32, #8d5524);
+    color: #ffffff;
+    box-shadow: 0 2px 10px rgba(205, 127, 50, 0.3);
+    font-size: 16px;
+}
+
+.player-main-info {
+    flex: 1;
+    overflow: hidden;
+}
+
+.player-rank-name {
+    font-size: 14px;
+    font-weight: 800;
+    color: #ffffff;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.you-tag {
+    background: #00e676;
+    color: #0b1f14;
+    font-size: 10px;
+    font-weight: 800;
+    padding: 1px 6px;
+    border-radius: 6px;
+}
+
+.player-school-sub {
+    font-size: 11px;
+    color: #90a4ae;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.player-score-badge {
+    text-align: left;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    flex-shrink: 0;
+}
+
+.score-years {
+    font-size: 17px;
+    font-weight: 900;
+    color: var(--color-gold);
+}
+
+.score-label-small {
+    font-size: 9.5px;
+    color: #78909c;
+}
+
+.leaderboard-loading, .leaderboard-empty {
+    text-align: center;
+    padding: 30px 10px;
+    color: #90a4ae;
+    font-size: 13.5px;
+}
+
+/* وضعیت شناور کاربر خارج از ۱۰ نفر اول */
+.sticky-user-rank {
+    margin-top: 8px;
+    background: rgba(30, 20, 15, 0.95);
+    border: 1px dashed var(--border-gold);
+    border-radius: 12px;
+    padding: 8px 14px;
+    font-size: 12.5px;
+    color: #ffca28;
+    text-align: center;
+}
+
+/* کادرهای بخش Game Over */
+.gameover-rank-box {
+    background: rgba(0, 230, 118, 0.12);
+    border: 1px solid rgba(0, 230, 118, 0.4);
+    border-radius: 14px;
+    padding: 10px 14px;
+    margin: 12px 0;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    text-align: right;
+}
+
+.rank-badge-icon {
+    font-size: 24px;
+}
+
+.rank-text-content {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.rank-text-content strong {
+    font-size: 13px;
+    color: #00e676;
+}
+
+.rank-text-content span {
+    font-size: 12px;
+    color: #c8e6c9;
+}
+
+.anon-upgrade-box {
+    background: rgba(255, 202, 40, 0.12);
+    border: 1px solid rgba(255, 202, 40, 0.35);
+    border-radius: 14px;
+    padding: 12px;
+    margin: 12px 0;
+    text-align: center;
+}
+
+.anon-upgrade-box p {
+    font-size: 12px;
+    color: #ffd54f;
+    margin-bottom: 8px;
+}
+
+.btn-upgrade-action {
+    background: linear-gradient(135deg, #ffca28, #ffa000);
+    color: #120b07;
+    border: none;
+    font-family: var(--font-main);
+    font-size: 13px;
+    font-weight: 800;
+    padding: 8px 18px;
+    border-radius: 10px;
+    cursor: pointer;
+    box-shadow: 0 3px 10px rgba(255, 202, 40, 0.35);
+}
+
+.btn-upgrade-action:hover {
+    transform: translateY(-1px);
+}
+
+.result-leaderboard-btn {
+    background: #ffca28 !important;
+    color: #1a0e08 !important;
+    border: 1px solid #ffd54f !important;
+    font-family: var(--font-main) !important;
+    font-size: 14px !important;
+    font-weight: 800 !important;
+    padding: 10px 20px !important;
+    border-radius: 14px !important;
+    cursor: pointer !important;
+    box-shadow: 0 4px 14px rgba(255, 202, 40, 0.3) !important;
+    transition: all 0.2s ease !important;
+}
+
+.result-leaderboard-btn:hover {
+    background: #ffd54f !important;
+    transform: translateY(-2px) !important;
+}
+
+/* Match the five-heart recap to the final lifespan poster. */
+:is(#gameOverDialog, #deathDialog) .result-poster { overflow-y: auto; touch-action: pan-y; }
+.death-result .modal-text { color: #d3dcfa; font-size: 13px; line-height: 1.8; margin: 10px 0 18px; }
+.death-result .loss-history { background: transparent; padding: 0; margin-bottom: 20px; }
+.death-result .loss-history h3 { color: #d3dcfa; font-size: 13px; margin-bottom: 12px; }
+.death-result #deathReasons { gap: 8px; }
+.death-result #deathReasons li { background: #1b306f; border: 1px solid #6b80b7; border-radius: 13px; padding: 10px 38px 10px 12px; }
+.death-result #deathReasons li::before { color: #ffb7a7; top: 12px; }
+.death-result #deathReasons strong { color: #ffe391; font-size: 13px; }
+.death-result #deathReasons p { display: block; margin: 3px 0 0; color: #d3dcfa; font-size: 12px; }

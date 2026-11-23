@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>نبرد سلامت | Health Battle</title>
+    <meta name="description" content="بازی نبرد سلامت - شبیه به فروت نینجا با غذاهای سالم و پرهیز از فست‌فود و سکته قلبی">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="icon" type="image/png" href="assets/images/apple.png">
+</head>
+<body>
+    <!-- بوم اصلی رندر بازی -->
+    <canvas id="gameCanvas" aria-label="بوم بازی نبرد سلامت"></canvas>
+
+    <!-- فلاش اخطار سکته قلبی -->
+    <div id="screenFlash" aria-hidden="true"></div>
+
+    <!-- نوار وضعیت بالای صفحه (HUD) -->
+    <header id="hudBar" class="hidden">
+        <!-- پنل امتیازات -->
+        <div class="hud-panel life-hud">
+            <div class="score-box">
+                <span class="score-badge" aria-hidden="true">🍎</span>
+                <div class="score-content">
+                    <span class="score-label">سال‌های زندگی</span>
+                    <span id="scoreVal" class="score-number">۱۰</span>
+                </div>
+            </div>
+            <div class="score-content high-score-box">
+                <span class="score-label">طولانی‌ترین زندگی</span>
+                <span id="highScoreVal" class="high-score-number">۰</span>
+            </div>
+            <div class="hearts-box">
+                <span class="hearts-label">قلب‌های باقی‌مانده:</span>
+                <div id="heartsContainer" class="hearts-list" role="status" aria-live="polite"></div>
+            </div>
+        </div>
+
+        <button id="btnPause" class="settings-toggle" type="button" aria-label="تنظیمات و توقف بازی" aria-haspopup="dialog" aria-controls="pauseDialog">⚙</button>
+    </header>
+
+    <!-- صفحه شروع بازی -->
+    <main id="startScreen">
+        <header class="start-header">
+            <span class="start-badge">نسخه نینجایی سلامت و تغذیه سالم</span>
+            <h1 class="game-title">نبرد سلامت</h1>
+            <p class="game-subtitle">غذای سالم قاچ کن، سال‌های زندگی جمع کن و رکورد عمرت را بهتر کن!</p>
+        </header>
+
+        <!-- کارت مشخصات بازیکن وارد شده -->
+        <div id="playerProfileCard" class="player-profile-badge" hidden>
+            <div class="player-avatar" aria-hidden="true">🥷</div>
+            <div class="player-details">
+                <span class="player-greeting">خوش آمدید،</span>
+                <strong id="playerDisplayName" class="player-name">بازیکن سلامت</strong>
+                <span id="playerMeta" class="player-school-tag">دبستان پیام دانش</span>
+            </div>
+            <button id="btnEditProfile" class="btn-profile-edit" type="button" aria-label="ویرایش مشخصات" title="ویرایش مشخصات">✏️</button>
+        </div>
+
+        <section class="start-rules-card" aria-label="قوانین بازی">
+            <span class="rules-icon" aria-hidden="true">❤️‍🔥</span>
+            <p class="rules-text">
+                شروع با <strong>۱۰ سال و ۵ قلب</strong>؛ هر غذای سالم <strong>+۱ سال</strong>، هر غذای ناسالم <strong>−۲ سال و یک قلب</strong>.<br>
+                زنجیره ۵ تایی: <strong>+۳ سال</strong>، ۱۰ تایی: <strong>+۵ سال</strong>، ۲۰ تایی: <strong>+۱۰ سال</strong>؛ هر جایزه یک‌بار در هر زنجیره. غذای ناسالم زنجیره را می‌شکند.
+            </p>
+        </section>
+
+        <div class="start-record">طولانی‌ترین زندگی: <strong id="startHighScoreVal">۰</strong> سال</div>
+        <footer class="start-actions">
+            <button id="btnStartGameDirect" class="start-btn primary-start-btn" type="button">⚔️ شروع نبرد</button>
+            <button id="btnLeaderboardStart" class="start-btn leaderboard-btn" type="button">🏆 جدول رتبه‌بندی</button>
+            <button id="btnGuide" class="start-btn" type="button">📖 راهنمای غذاها</button>
+        </footer>
+    </main>
+
+    <!-- اعلان پیام سلامت و آموزشی بالای صفحه -->
+    <aside id="healthToast" role="status" aria-live="polite">
+        <div id="toastHazard" hidden></div>
+        <h4 id="toastTitle"></h4>
+        <p id="toastDesc"></p>
+    </aside>
+
+    <!-- تنظیمات؛ بازی هنگام باز بودن این دیالوگ متوقف می‌شود -->
+    <dialog id="pauseDialog" aria-labelledby="pauseTitle">
+        <div class="modal-content settings-dialog">
+            <span class="dialog-eyebrow">یک نفس تازه</span>
+            <h2 id="pauseTitle" class="modal-title">تنظیمات بازی</h2>
+            <p class="modal-text">بازی متوقف است؛ هر وقت آماده‌ای ادامه بده.</p>
+            <div class="settings-options">
+                <button id="btnSound" class="settings-option" type="button" aria-label="قطع و وصل صدا">🔊 صدا: روشن</button>
+                <button id="btnFullscreen" class="settings-option" type="button" aria-label="تمام صفحه">⛶ تمام‌صفحه</button>
+                <button id="btnRestartFromPause" class="settings-option" type="button">↻ شروع دوباره از ۱۰ سالگی</button>
+            </div>
+            <button id="btnResume" class="btn-primary" type="button" autofocus>ادامه زندگی ←</button>
+        </div>
+    </dialog>
+
+    <dialog id="deathDialog" aria-labelledby="deathTitle">
+        <div class="modal-content life-result result-poster death-result">
+            <div class="poster-topline">
+                <span class="poster-brand"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M16 27S3 19 3 11a7 7 0 0 1 13-3 7 7 0 0 1 13 3c0 8-13 16-13 16Z" fill="currentColor"/><path d="m8 16 5-1 3-5 2 10 3-5h5" fill="none" stroke="#223780" stroke-width="2" stroke-linejoin="round"/></svg> نبرد سلامت</span>
+                <span class="poster-edition">پایان مسیر این زندگی</span>
+            </div>
+            <div class="result-heading">
+                <h2 id="deathTitle">۵ قلب، ۵ علت</h2>
+            </div>
+            <p class="modal-text">این انتخاب‌ها قلب‌هایت را گرفتند.</p>
+            <section class="loss-history" aria-labelledby="deathReasonsTitle">
+                <h3 id="deathReasonsTitle"><span aria-hidden="true">♡</span> چه چیزهایی قلب‌هایت را گرفت؟</h3>
+                <ol id="deathReasons"></ol>
+            </section>
+            <div class="poster-footer">
+                <strong>هر انتخاب سالم، یک فرصت بیشتر برای زندگی.</strong>
+                <span>نبرد سلامت | سال‌ها نمادین و مخصوص بازی‌اند</span>
+            </div>
+        </div>
+        <div class="result-floating-actions">
+            <button id="btnContinueResults" class="btn-primary result-retry" type="button" autofocus>ادامه</button>
+        </div>
+    </dialog>
+
+    <dialog id="gameOverDialog" aria-labelledby="gameOverTitle" aria-describedby="lifeSummary">
+        <div class="modal-content life-result result-poster">
+            <div class="poster-topline">
+                <span class="poster-brand"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M16 27S3 19 3 11a7 7 0 0 1 13-3 7 7 0 0 1 13 3c0 8-13 16-13 16Z" fill="currentColor"/><path d="m8 16 5-1 3-5 2 10 3-5h5" fill="none" stroke="#223780" stroke-width="2" stroke-linejoin="round"/></svg> نبرد سلامت</span>
+                <span class="poster-edition">نتیجه نبرد من</span>
+            </div>
+            <div class="result-heading">
+                <h2 id="gameOverTitle">انتخاب‌های من، زندگی من!</h2>
+                <span id="newRecordBadge" class="new-record-badge" hidden><span aria-hidden="true">★</span> رکورد جدید</span>
+            </div>
+            <div class="lifespan-hero">
+                <div class="medal-disc" aria-hidden="true"></div>
+                <img class="result-fruit fruit-apple" src="assets/images/apple.png" width="108" height="122" alt="" aria-hidden="true">
+                <img class="result-fruit fruit-banana" src="assets/images/banana.png" width="116" height="116" alt="" aria-hidden="true">
+                <span class="medal-caption">من ساختم</span>
+                <strong id="finalScoreVal">۰</strong>
+                <span class="lifespan-unit">سال زندگی</span>
+                <svg class="result-confetti" viewBox="0 0 360 230" fill="none" aria-hidden="true"><path d="m33 34 7 15M322 51l-10 10M47 177l12-4M303 191l10 9" stroke="#ff967b" stroke-width="5" stroke-linecap="round"/><path d="m90 21 3-9M276 23l6 12M17 121l-6-5" stroke="#9ebaff" stroke-width="4" stroke-linecap="round"/><circle cx="323" cy="132" r="4" fill="#f4d66f"/><circle cx="68" cy="80" r="3" fill="#9ebaff"/></svg>
+            </div>
+            <div class="record-pill"><span>بهترین رکورد</span><b id="finalHighScoreVal">۰ سال</b></div>
+            <p id="lifeSummary" class="life-summary"></p>
+            <div class="year-breakdown" aria-label="تغییر سال‌های زندگی از ۱۰ سالگی">
+                <div><strong id="earnedYears">۰</strong><span>غذای سالم</span></div>
+                <div><strong id="bonusYears">۰</strong><span>جایزه زنجیره</span></div>
+                <div><strong id="lostYears">۰</strong><span>انتخاب ناسالم</span></div>
+            </div>
+            <p id="gameOverTip" class="result-encouragement"></p>
+            
+            <!-- وضعیت رتبه بازیکن پس از ثبت در سرور -->
+            <div id="gameOverRankBox" class="gameover-rank-box" hidden>
+                <span class="rank-badge-icon">🏅</span>
+                <div class="rank-text-content">
+                    <strong id="gameOverRankTitle">رتبه شما:</strong>
+                    <span id="gameOverRankDesc">در حال بررسی جایگاه در جدول...</span>
+                </div>
+            </div>
+
+            <!-- پیشنهاد ثبت‌نام برای کاربران ناشناس -->
+            <div id="anonUpgradeBox" class="anon-upgrade-box" hidden>
+                <p>این رکورد زیبا ثبت شد! برای نمایش نام و رتبه شما در جدول مسابقه:</p>
+                <button id="btnAnonUpgrade" class="btn-upgrade-action" type="button">ثبت مشخصات و نمایش در لیدربرد</button>
+            </div>
+
+            <div class="poster-footer">
+                <strong>رکورد من اینه؛ تو چند سال می‌سازی؟</strong>
+                <span>نبرد سلامت | سال‌ها نمادین و مخصوص بازی‌اند</span>
+            </div>
+        </div>
+        <div class="result-floating-actions">
+            <button id="btnRestartGameOver" class="btn-primary result-retry" type="button" autofocus>شروع دوباره</button>
+        </div>
+    </dialog>
+
+    <!-- دیالوگ ثبت مشخصات بازیکن (فرم شروع اولیه یا ویرایش) -->
+    <dialog id="registerDialog" aria-labelledby="registerTitle">
+        <div class="modal-content register-modal">
+            <span class="dialog-eyebrow">ثبت‌نام مبارز سلامت</span>
+            <h2 id="registerTitle" class="modal-title">مشخصات برای لیدربرد</h2>
+            <p class="modal-text">اطلاعات شما با کوکی یک‌ماهه در سرور ذخیره می‌شود تا در مسابقه و رده‌بندی شرکت کنید.</p>
+
+            <form id="registerForm" class="register-form" onsubmit="return false;">
+                <div class="form-group">
+                    <label for="regFullName" class="form-label">نام و نام خانوادگی:</label>
+                    <input type="text" id="regFullName" class="form-input" placeholder="مثلاً: علی رضایی" required autocomplete="name">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">دوره تحصیلی:</label>
+                    <div class="category-buttons-group" role="radiogroup" aria-label="انتخاب دوره تحصیلی">
+                        <button type="button" class="stage-btn active" data-cat="elementary">ابتدایی</button>
+                        <button type="button" class="stage-btn" data-cat="middle">متوسط 1</button>
+                        <button type="button" class="stage-btn" data-cat="high">متوسطه دو</button>
+                        <button type="button" class="stage-btn" data-cat="other">سایر</button>
+                    </div>
+                    <input type="hidden" id="regCategory" value="elementary">
+                </div>
+
+                <div class="form-group" id="groupSchool">
+                    <label for="regSchool" class="form-label">نام مدرسه:</label>
+                    <input type="text" id="regSchool" class="form-input" placeholder="مثلاً: دبستان یا دبیرستان شهید فهمیده">
+                </div>
+
+                <div class="form-group" id="groupClass">
+                    <label for="regClass" class="form-label">کلاس / پایه (فقط برای ابتدایی):</label>
+                    <input type="text" id="regClass" class="form-input" placeholder="مثلاً: ششم ۲ یا پنجم الف">
+                </div>
+
+                <div id="registerError" class="form-error-banner" hidden></div>
+
+                <div class="register-actions">
+                    <button id="btnSubmitRegister" class="btn-primary" type="button">ثبت و شروع</button>
+                    <button id="btnStartAnonymous" class="btn-ghost" type="button">شروع به صورت ناشناس</button>
+                </div>
+            </form>
+        </div>
+    </dialog>
+
+    <!-- دیالوگ لیدربورد و رتبه‌بندی بازیکنان -->
+    <dialog id="leaderboardDialog" aria-labelledby="leaderboardTitle">
+        <div class="modal-content leaderboard-modal">
+            <div class="leaderboard-header">
+                <div>
+                    <span class="dialog-eyebrow">لیگ قهرمانان سلامت</span>
+                    <h2 id="leaderboardTitle" class="modal-title">🏆 جدول رتبه‌بندی</h2>
+                </div>
+                <button id="btnCloseLeaderboard" class="modal-close-btn" type="button" aria-label="بستن لیدربرد">✕</button>
+            </div>
+
+            <!-- کارت جایگاه و رتبه کاربر فعلی -->
+            <div id="userRankBanner" class="user-rank-banner">
+                <!-- محتوای داینامیک وضعیت کاربر -->
+            </div>
+
+            <!-- تب‌های مقاطع تحصیلی -->
+            <div class="leaderboard-tabs" role="tablist" aria-label="فیلتر مقطع لیدربرد">
+                <button type="button" class="tab-btn active" data-cat="elementary">ابتدایی</button>
+                <button type="button" class="tab-btn" data-cat="middle">متوسطه اول</button>
+                <button type="button" class="tab-btn" data-cat="high">متوسطه دوم</button>
+                <button type="button" class="tab-btn" data-cat="other">سایر</button>
+                <button type="button" class="tab-btn" data-cat="all">همه رده‌ها</button>
+            </div>
+
+            <!-- جدول لیست ده نفر برتر -->
+            <div class="leaderboard-body">
+                <div id="leaderboardLoading" class="leaderboard-loading" hidden>در حال بارگذاری جدول رتبه‌بندی...</div>
+                <div id="leaderboardList" class="leaderboard-list">
+                    <!-- آیتم‌های ۱۰ نفر اول -->
+                </div>
+                <div id="leaderboardEmpty" class="leaderboard-empty" hidden>هنوز رکوردی در این مقطع ثبت نشده است. اولین قهرمان باشید!</div>
+            </div>
+
+            <!-- وضعیت شناور کاربر در صورتی که خارج از ۱۰ نفر اول باشد -->
+            <div id="stickyUserRank" class="sticky-user-rank" hidden></div>
+        </div>
+    </dialog>
+
+    <!-- دیالوگ راهنمای غذاها (Food Guide Dialog) -->
+    <dialog id="guideDialog" aria-labelledby="guideTitle">
+        <div class="modal-content guide-modal-content">
+            <h2 id="guideTitle" class="modal-title">راهنمای نبرد سلامت</h2>
+            <p class="modal-text">با خواص هر غذای سالم و آسیب‌های فست‌فودها آشنا شوید:</p>
+
+            <div class="guide-scroll">
+                <h3 class="guide-section-title healthy-title">🥗 غذاهای سالم (هر برش +۱ سال)</h3>
+                <div id="guideHealthyList" class="guide-grid"></div>
+
+                <h3 class="guide-section-title unhealthy-title">🍟 غذاهای ناسالم (هر برش −۲ سال و یک قلب)</h3>
+                <div id="guideUnhealthyList" class="guide-grid"></div>
+            </div>
+
+            <div class="modal-actions">
+                <button id="btnCloseGuide" class="btn-secondary" type="button">بستن راهنما</button>
+            </div>
+        </div>
+    </dialog>
+
+    <p class="game-note">سال‌ها و بیماری‌ها نمادهای آموزشی بازی‌اند؛ پیش‌بینی عمر یا تشخیص پزشکی نیستند. <a href="https://www.who.int/news-room/fact-sheets/detail/healthy-diet" target="_blank" rel="noopener noreferrer">درباره تغذیه سالم</a></p>
+
+    <!-- اسکریپت اصلی بازی نبرد سلامت (اجرای آسان بدون نیاز به سرور) -->
+    <script src="js/game-app.js"></script>
+</body>
+</html>

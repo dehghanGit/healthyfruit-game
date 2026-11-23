@@ -1,0 +1,26 @@
+[Unit]
+Description=Health Battle API
+After=network.target
+
+[Service]
+Type=simple
+User=halosi
+Group=halosi
+WorkingDirectory=/srv/halosi
+EnvironmentFile=/etc/halosi.env
+ExecStart=/srv/halosi/.venv/bin/python /srv/halosi/server.py
+Restart=on-failure
+RestartSec=3
+LimitNOFILE=8192
+TasksMax=64
+MemoryHigh=192M
+MemoryMax=256M
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/halosi
+UMask=0077
+
+[Install]
+WantedBy=multi-user.target

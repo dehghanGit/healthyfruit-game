@@ -1,0 +1,81 @@
+{
+  "environment": {
+    "platform": "win32",
+    "python": "3.11.0",
+    "users_per_burst": 1000,
+    "rounds_per_phase": 1,
+    "server_threads": 8,
+    "note": "Local machine, client and server share CPU; not a 1 GB VPS certification."
+  },
+  "phases": {
+    "profile_burst": {
+      "requests": 1000,
+      "seconds": 2.731,
+      "requests_per_second": 366.2,
+      "statuses": {
+        "200": 1000
+      },
+      "latency_ms": {
+        "p50": 1597.5,
+        "p95": 2591.6,
+        "p99": 2672.2,
+        "max": 2682.1
+      }
+    },
+    "leaderboard_burst": {
+      "requests": 1000,
+      "seconds": 3.72,
+      "requests_per_second": 268.8,
+      "statuses": {
+        "200": 1000
+      },
+      "latency_ms": {
+        "p50": 2068.8,
+        "p95": 3531.7,
+        "p99": 3679.4,
+        "max": 3690.1
+      }
+    },
+    "score_burst": {
+      "requests": 1000,
+      "seconds": 4.541,
+      "requests_per_second": 220.2,
+      "statuses": {
+        "200": 946,
+        "ConnectionRefusedError": 54
+      },
+      "latency_ms": {
+        "p50": 2473.1,
+        "p95": 4240.7,
+        "p99": 4357.4,
+        "max": 4502.9
+      }
+    },
+    "mixed": {
+      "requests": 1000,
+      "seconds": 3.526,
+      "requests_per_second": 283.6,
+      "statuses": {
+        "200": 802,
+        "ConnectionRefusedError": 198
+      },
+      "latency_ms": {
+        "p50": 2522.2,
+        "p95": 3343.7,
+        "p99": 3462.8,
+        "max": 3500.8
+      }
+    }
+  },
+  "memory_mb": {
+    "baseline_rss": 37.3,
+    "peak_rss": 42.6
+  },
+  "peak_process_threads": 12,
+  "server_cpu_seconds": 21.25,
+  "database": {
+    "game_records": 1146,
+    "integrity_check": "ok",
+    "players_with_incorrect_game_count": 0
+  }
+}

@@ -1,0 +1,95 @@
+{
+  "environment": {
+    "platform": "win32",
+    "python": "3.11.0",
+    "users_per_burst": 1000,
+    "rounds_per_phase": 3,
+    "max_simultaneous_http_requests": 128,
+    "paced_mixed_target_rps": 50,
+    "server_threads": 8,
+    "note": "Local machine, client and server share CPU; not a 1 GB VPS certification."
+  },
+  "phases": {
+    "profile_burst": {
+      "requests": 3000,
+      "seconds": 7.858,
+      "requests_per_second": 381.8,
+      "statuses": {
+        "200": 3000
+      },
+      "latency_ms": {
+        "p50": 275.7,
+        "p95": 383.3,
+        "p99": 520.5,
+        "max": 579.2
+      }
+    },
+    "leaderboard_burst": {
+      "requests": 3000,
+      "seconds": 11.06,
+      "requests_per_second": 271.2,
+      "statuses": {
+        "200": 3000
+      },
+      "latency_ms": {
+        "p50": 385.1,
+        "p95": 653.2,
+        "p99": 834.9,
+        "max": 850.7
+      }
+    },
+    "score_burst": {
+      "requests": 3000,
+      "seconds": 21.046,
+      "requests_per_second": 142.5,
+      "statuses": {
+        "200": 3000
+      },
+      "latency_ms": {
+        "p50": 779.1,
+        "p95": 1304.3,
+        "p99": 1703.2,
+        "max": 3627.5
+      }
+    },
+    "mixed": {
+      "requests": 3000,
+      "seconds": 14.857,
+      "requests_per_second": 201.9,
+      "statuses": {
+        "200": 3000
+      },
+      "latency_ms": {
+        "p50": 510.3,
+        "p95": 862.4,
+        "p99": 1500.6,
+        "max": 1672.4
+      }
+    },
+    "paced_mixed": {
+      "requests": 1000,
+      "seconds": 20.051,
+      "requests_per_second": 49.9,
+      "statuses": {
+        "200": 1000
+      },
+      "latency_ms": {
+        "p50": 9.4,
+        "p95": 19.8,
+        "p99": 25.9,
+        "max": 34.4
+      }
+    }
+  },
+  "memory_mb": {
+    "baseline_rss": 37.3,
+    "peak_rss": 42.3
+  },
+  "peak_process_threads": 12,
+  "server_cpu_seconds": 74.17,
+  "database": {
+    "game_records": 4000,
+    "integrity_check": "ok",
+    "players_with_incorrect_game_count": 0
+  }
+}

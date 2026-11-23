@@ -1,0 +1,59 @@
+Create a premium game sprite sheet: exactly 36 unique 3D stylized food illustrations, arranged in a perfectly aligned 6×6 grid (6 columns, 6 rows). Exactly ONE different icon per cell, in the precise row-major order below. Square canvas, highest available resolution. This is a production transparent food icon pack for a slicing game.
+
+OBJECTS, LEFT TO RIGHT, TOP TO BOTTOM:
+Row 1:
+1. One whole red apple with stem and one attached leaf, intact, NO slice.
+2. One whole unpeeled yellow banana, NOT a bunch, no separate pieces.
+3. One compact broccoli head/floret, one object.
+4. One whole orange carrot with a short attached green top.
+5. One whole green cucumber, intact, no slice.
+6. One whole white chicken egg in its shell, no broken shell or yolk.
+Row 2:
+7. One whole intact silvery blue fish, recognizable fish silhouette.
+8. One whole yellow lemon, no slice.
+9. One simple clear drinking GLASS filled with white milk; NOT a carton or bottle.
+10. One whole orange fruit with a small attached leaf, no wedge.
+11. One whole pineapple with its attached green crown, no slices.
+12. One compact bowl of green vegetable salad, everything contained in the one bowl.
+Row 3:
+13. One whole red strawberry with attached green calyx, no slices.
+14. One whole ripe red tomato with attached green stem, no slices.
+15. One whole oval green watermelon with dark stripes; completely intact, NO red wedge and NO exposed flesh.
+16. One whole red pomegranate with its crown; completely intact, NO cut half, NO seeds or slice beside it.
+17. One single shelled almond kernel, warm brown with subtle ridges.
+18. One single wedge of pale yellow cheese with a few small holes, no extra slices.
+Row 4:
+19. One single walnut kernel, intact joined lobes, no separate shell or extra nut.
+20. One clear, straight-sided vintage glass soft-drink bottle filled with opaque white Persian doogh yogurt drink, simple blue metal cap. This is a plain UNBRANDED generic soda-style glass bottle, NOT the Coca-Cola contour shape, NOT a plastic dairy bottle, NOT a milk glass; no words, no logos. Make this milk-white bottle visually distinct from the dark cola bottle.
+21. One assembled hamburger in a round bun.
+22. One compact red carton holding golden French fries, no scattered fries.
+23. One iconic COCA-COLA contoured glass bottle filled with dark brown cola, red metal cap and red Coca-Cola label with its recognizable white script. This requested product branding is the ONLY exception to the no-text rule. NOT a can.
+24. One small round pink wrapped hard candy in a twist wrapper, no stick; clearly different from lollipop.
+Row 5:
+25. One single triangular pizza slice with cheese and small toppings.
+26. One hot dog in a bun with a neat mustard stripe.
+27. One compact opened potato-chip snack bag with a few crisps contained at its opening; no loose chips beside it.
+28. One small single serving slice of cream layer cake with pink frosting.
+29. One single round chocolate chip cookie.
+30. One ice cream cone with a single pink scoop, not a bowl.
+Row 6:
+31. One compact rolled red Persian fruit leather (lavashak) with its connected sheet slightly unfurled; one continuous connected object, no fruit garnish.
+32. One compact opened orange bag of orange cheese puffs, puffs visible only at the bag opening, no loose pieces outside.
+33. One small bowl containing colorful candy-coated chocolate buttons (Smarties); all candies contained within this bowl.
+34. One small milk-chocolate bar, a single connected rectangular piece divided into squares, no detached chunks and no wrapper.
+35. One simple clear glass salt shaker filled with white salt and a silver perforated cap, no scattered salt.
+36. One round red-and-white spiral LOLLIPOP on one straight white stick, no wrapper.
+
+ART DIRECTION:
+Modern premium 3D stylized illustrations. Clean minimalist soft digital painting. Soft clay-like forms, subtly hand-painted texture, smooth rounded edges, simplified geometry, balanced proportions, clear recognizable silhouettes. Soft matte materials, subtle gradients and gentle highlights. Sophisticated vivid colors with warm muted accents. Soft global illumination, ambient occlusion, delicate dimensional shading. Same consistent 3/4 perspective, camera and soft upper-left lighting on every item. Polished and visually cohesive, suitable for high-end contemporary mobile game icons.
+
+LAYOUT:
+Exactly 36 icons in a precise 6×6 grid of equal invisible square cells. Cell centers at (column+0.5)/6 and (row+0.5)/6 of the canvas. Every icon centered in its own cell, including tall bottles and sticks. Each icon stays within the central 70–75% of its cell, with generous equal transparent gutters. Keep all object parts fully inside their own cell. Uniform visual weight; tall silhouettes scaled to fit, not cropped. NO overlap across cells. No extra mini objects, garnish or scattered pieces. No background panels or visible grid.
+
+TRANSPARENCY:
+Genuinely fully transparent background with TRUE ALPHA CHANNEL, including transparent gaps between ALL 36 objects. No solid white or gray background, no checkerboard baked into pixels, no scenery, floor or environment. Only clean antialiased silhouettes and very subtle local contact shading attached closely to the object; no broad shadows joining separate objects.
+
+STRICT NEGATIVES:
+No captions, numbering, object names, naming labels, watermarks, borders, frames, outlines, thick black strokes, photorealism, harsh shadows, excessive reflections, noisy texture or clutter. No duplicates, omissions or extra icons. No sliced/cut fruit or detached fruit pieces. Only the Coca-Cola bottle may carry its specifically requested authentic product label; everything else must have no lettering or branding.
+
+FINAL: One cohesive square transparent 6×6 sprite sheet with exactly these 36 distinct premium 3D food objects, in the exact specified order.

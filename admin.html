@@ -1,0 +1,1363 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>پنل مدیریت و داوری مسابقه | نبرد سلامت</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700;800;900&display=swap">
+    <link rel="icon" type="image/png" href="assets/images/apple.png">
+    <style>
+        :root {
+            --font-main: 'Vazirmatn', Tahoma, sans-serif;
+            --primary: #00e676;
+            --primary-glow: rgba(0, 230, 118, 0.35);
+            --danger: #ff1744;
+            --gold: #ffca28;
+            --gold-glow: rgba(255, 202, 40, 0.4);
+            --bg: #0c0806;
+            --bg-card: rgba(24, 16, 12, 0.95);
+            --border-card: rgba(255, 202, 40, 0.25);
+            --border-subtle: rgba(255, 255, 255, 0.08);
+            --text-main: #ffffff;
+            --text-muted: #90a4ae;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: var(--font-main);
+        }
+
+        body {
+            background-color: var(--bg);
+            background-image: radial-gradient(circle at 10% 20%, rgba(255, 202, 40, 0.04) 0%, transparent 40%),
+                              radial-gradient(circle at 90% 80%, rgba(0, 230, 118, 0.04) 0%, transparent 40%);
+            color: var(--text-main);
+            min-height: 100vh;
+            direction: rtl;
+        }
+
+        /* صفحه ورود */
+        .login-wrapper {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .login-card {
+            background: var(--bg-card);
+            border: 1.5px solid var(--border-card);
+            border-radius: 24px;
+            padding: 40px 36px;
+            max-width: 420px;
+            width: 100%;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7);
+            text-align: center;
+        }
+
+        .login-logo {
+            font-size: 46px;
+            margin-bottom: 12px;
+        }
+
+        .login-title {
+            font-size: 24px;
+            font-weight: 900;
+            color: var(--gold);
+            margin-bottom: 6px;
+        }
+
+        .login-subtitle {
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-bottom: 26px;
+        }
+
+        .form-group {
+            margin-bottom: 18px;
+            text-align: right;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--gold);
+            margin-bottom: 6px;
+        }
+
+        .form-input, .form-select {
+            width: 100%;
+            background: rgba(10, 6, 4, 0.8);
+            border: 1.5px solid var(--border-card);
+            border-radius: 12px;
+            padding: 12px 14px;
+            color: #ffffff;
+            font-family: var(--font-main);
+            font-size: 14px;
+            outline: none;
+            transition: all 0.2s;
+        }
+
+        .form-input:focus, .form-select:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 12px var(--primary-glow);
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 11px 20px;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 800;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s;
+            text-decoration: none;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #00e676, #00b0ff);
+            color: #081810;
+            box-shadow: 0 4px 15px rgba(0, 230, 118, 0.35);
+            width: 100%;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 230, 118, 0.5);
+        }
+
+        .btn-gold {
+            background: linear-gradient(135deg, #ffca28, #ffa000);
+            color: #1a0e08;
+            box-shadow: 0 4px 15px rgba(255, 202, 40, 0.35);
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #ffffff;
+        }
+
+        .btn-outline:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: #ffffff;
+        }
+
+        .btn-danger {
+            background: rgba(255, 23, 68, 0.15);
+            border: 1px solid var(--danger);
+            color: #ff5252;
+        }
+
+        .btn-danger:hover {
+            background: var(--danger);
+            color: #ffffff;
+        }
+
+        .btn-sm {
+            padding: 6px 12px;
+            font-size: 12px;
+            border-radius: 8px;
+        }
+
+        .alert-error {
+            background: rgba(255, 23, 68, 0.15);
+            border: 1px solid var(--danger);
+            color: #ff8a80;
+            padding: 10px 14px;
+            border-radius: 10px;
+            font-size: 13px;
+            margin-bottom: 18px;
+            text-align: center;
+        }
+
+        /* ساختار داشبورد اصلی */
+        .admin-layout {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        /* هدر داشبورد */
+        .admin-header {
+            background: rgba(20, 12, 8, 0.95);
+            border-bottom: 1.5px solid var(--border-card);
+            padding: 14px 28px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            backdrop-filter: blur(10px);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .brand-section {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .brand-icon {
+            font-size: 28px;
+        }
+
+        .brand-title {
+            font-size: 18px;
+            font-weight: 900;
+            color: var(--gold);
+        }
+
+        .brand-tag {
+            background: rgba(0, 230, 118, 0.15);
+            color: var(--primary);
+            font-size: 11px;
+            padding: 2px 8px;
+            border-radius: 6px;
+            border: 1px solid rgba(0, 230, 118, 0.3);
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        /* ناوبری تب‌ها */
+        .dashboard-nav {
+            background: rgba(15, 10, 7, 0.85);
+            border-bottom: 1px solid var(--border-subtle);
+            padding: 10px 28px;
+            display: flex;
+            gap: 10px;
+        }
+
+        .nav-tab-btn {
+            background: transparent;
+            border: 1px solid transparent;
+            color: var(--text-muted);
+            font-family: var(--font-main);
+            font-size: 14px;
+            font-weight: 700;
+            padding: 9px 18px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .nav-tab-btn:hover {
+            color: #ffffff;
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .nav-tab-btn.active {
+            background: rgba(255, 202, 40, 0.15);
+            border-color: var(--gold);
+            color: var(--gold);
+        }
+
+        /* محتوای اصلی */
+        .dashboard-container {
+            flex: 1;
+            padding: 28px;
+            max-width: 1400px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        /* کارت‌های آماری بالا */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+            gap: 16px;
+            margin-bottom: 28px;
+        }
+
+        .stat-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-card);
+            border-radius: 18px;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+        }
+
+        .stat-icon-wrap {
+            width: 52px;
+            height: 52px;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 26px;
+            flex-shrink: 0;
+        }
+
+        .icon-blue { background: rgba(0, 176, 255, 0.15); color: #00b0ff; }
+        .icon-green { background: rgba(0, 230, 118, 0.15); color: #00e676; }
+        .icon-gold { background: rgba(255, 202, 40, 0.15); color: #ffca28; }
+        .icon-red { background: rgba(255, 23, 68, 0.15); color: #ff1744; }
+
+        .stat-meta {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .stat-label {
+            font-size: 12.5px;
+            color: var(--text-muted);
+            margin-bottom: 4px;
+        }
+
+        .stat-value {
+            font-size: 26px;
+            font-weight: 900;
+            color: #ffffff;
+        }
+
+        /* نمودارها و آمار مقاطع */
+        .analytics-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 28px;
+        }
+
+        @media (max-width: 900px) {
+            .analytics-row { grid-template-columns: 1fr; }
+        }
+
+        .panel-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-card);
+            border-radius: 18px;
+            padding: 22px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+        }
+
+        .panel-title {
+            font-size: 16px;
+            font-weight: 800;
+            color: var(--gold);
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .stage-bar-item {
+            margin-bottom: 12px;
+        }
+
+        .stage-bar-header {
+            display: flex;
+            justify-content: space-between;
+            font-size: 13px;
+            margin-bottom: 6px;
+        }
+
+        .stage-bar-track {
+            height: 9px;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 6px;
+            overflow: hidden;
+        }
+
+        .stage-bar-fill {
+            height: 100%;
+            border-radius: 6px;
+            transition: width 0.6s ease;
+        }
+
+        .fill-elementary { background: #00e676; }
+        .fill-middle { background: #00b0ff; }
+        .fill-high { background: #ffca28; }
+        .fill-other { background: #ab47bc; }
+        .fill-anon { background: #78909c; }
+
+        .school-rank-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .school-rank-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(0, 0, 0, 0.25);
+            padding: 10px 14px;
+            border-radius: 10px;
+            font-size: 13.5px;
+        }
+
+        /* نوار ابزار فیلتر و جستجو */
+        .toolbar {
+            background: var(--bg-card);
+            border: 1px solid var(--border-card);
+            border-radius: 16px;
+            padding: 16px 20px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 14px;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .search-box {
+            position: relative;
+            min-width: 260px;
+        }
+
+        .search-input {
+            width: 100%;
+            background: rgba(10, 6, 4, 0.8);
+            border: 1.5px solid var(--border-card);
+            border-radius: 10px;
+            padding: 9px 12px 9px 34px;
+            color: #ffffff;
+            font-family: var(--font-main);
+            font-size: 13.5px;
+            outline: none;
+        }
+
+        .search-input:focus {
+            border-color: var(--primary);
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+            pointer-events: none;
+        }
+
+        /* جدول بازیکنان */
+        .table-responsive {
+            background: var(--bg-card);
+            border: 1px solid var(--border-card);
+            border-radius: 18px;
+            overflow-x: auto;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: right;
+            font-size: 13.5px;
+        }
+
+        th {
+            background: rgba(35, 22, 16, 0.95);
+            color: var(--gold);
+            font-weight: 800;
+            padding: 14px 16px;
+            border-bottom: 1.5px solid var(--border-card);
+            white-space: nowrap;
+        }
+
+        td {
+            padding: 13px 16px;
+            border-bottom: 1px solid var(--border-subtle);
+            color: #eceff1;
+            white-space: nowrap;
+        }
+
+        tr:hover td {
+            background: rgba(255, 202, 40, 0.04);
+        }
+
+        .badge-cat {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 700;
+        }
+
+        .cat-elementary { background: rgba(0, 230, 118, 0.15); color: #00e676; border: 1px solid rgba(0, 230, 118, 0.3); }
+        .cat-middle { background: rgba(0, 176, 255, 0.15); color: #00b0ff; border: 1px solid rgba(0, 176, 255, 0.3); }
+        .cat-high { background: rgba(255, 202, 40, 0.15); color: #ffca28; border: 1px solid rgba(255, 202, 40, 0.3); }
+        .cat-other { background: rgba(171, 71, 188, 0.15); color: #ce93d8; border: 1px solid rgba(171, 71, 188, 0.3); }
+        .cat-anonymous { background: rgba(120, 144, 156, 0.15); color: #b0bec5; border: 1px solid rgba(120, 144, 156, 0.3); }
+
+        .score-pill {
+            font-weight: 900;
+            color: var(--gold);
+            font-size: 15px;
+        }
+
+        /* نمای زنده پروژکتور (Live Projector) */
+        .live-wrapper {
+            background: rgba(16, 10, 7, 0.98);
+            border: 2px solid var(--border-card);
+            border-radius: 24px;
+            padding: 24px;
+            box-shadow: 0 15px 50px rgba(0, 0, 0, 0.7);
+        }
+
+        .live-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 14px;
+            border-bottom: 1px solid var(--border-card);
+        }
+
+        .live-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            color: var(--primary);
+            font-weight: 700;
+        }
+
+        .pulse-dot {
+            width: 10px;
+            height: 10px;
+            background: var(--primary);
+            border-radius: 50%;
+            box-shadow: 0 0 10px var(--primary);
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(0.9); opacity: 0.7; }
+            50% { transform: scale(1.3); opacity: 1; }
+            100% { transform: scale(0.9); opacity: 0.7; }
+        }
+
+        .live-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 14px;
+        }
+
+        .live-card {
+            background: rgba(28, 18, 13, 0.9);
+            border: 1px solid var(--border-card);
+            border-radius: 16px;
+            padding: 16px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .live-card.rank-1 {
+            border-color: #ffd700;
+            background: linear-gradient(135deg, rgba(50, 35, 10, 0.9), rgba(28, 18, 13, 0.9));
+            box-shadow: 0 6px 20px rgba(255, 215, 0, 0.2);
+        }
+
+        .live-card.rank-2 {
+            border-color: #e0e0e0;
+            box-shadow: 0 4px 15px rgba(224, 224, 224, 0.15);
+        }
+
+        .live-card.rank-3 {
+            border-color: #cd7f32;
+            box-shadow: 0 4px 15px rgba(205, 127, 50, 0.15);
+        }
+
+        .live-rank-num {
+            font-size: 22px;
+            font-weight: 900;
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 0, 0, 0.4);
+            flex-shrink: 0;
+        }
+
+        .live-player-info {
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .live-player-name {
+            font-size: 16px;
+            font-weight: 800;
+            color: #ffffff;
+            margin-bottom: 2px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .live-player-sub {
+            font-size: 11.5px;
+            color: var(--text-muted);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .live-score {
+            font-size: 22px;
+            font-weight: 900;
+            color: var(--gold);
+            text-align: left;
+            flex-shrink: 0;
+        }
+
+        .live-score span {
+            font-size: 10px;
+            color: var(--text-muted);
+            display: block;
+        }
+
+        /* مودال ویرایش بازیکن */
+        dialog {
+            margin: auto;
+            border: none;
+            background: transparent;
+            padding: 0;
+        }
+
+        dialog::backdrop {
+            background: rgba(0, 0, 0, 0.75);
+            backdrop-filter: blur(5px);
+        }
+
+        .modal-box {
+            background: var(--bg-card);
+            border: 1.5px solid var(--border-card);
+            border-radius: 20px;
+            padding: 28px;
+            max-width: 480px;
+            width: 90vw;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
+            text-align: right;
+        }
+
+        .modal-title {
+            font-size: 18px;
+            font-weight: 900;
+            color: var(--gold);
+            margin-bottom: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- صفحه لاگین ادمین -->
+    <div id="loginView" class="login-wrapper">
+        <div class="login-card">
+            <div class="login-logo">⚔️</div>
+            <h1 class="login-title">ورود به پنل مدیریت</h1>
+            <p class="login-subtitle">داوری و نظارت بر مسابقه سلامت و لیدربرد مدارس</p>
+
+            <div id="loginAlert" class="alert-error" style="display: none;"></div>
+
+            <form id="adminLoginForm" onsubmit="return false;">
+                <div class="form-group">
+                    <label class="form-label" for="loginUser">نام کاربری:</label>
+                    <input type="text" id="loginUser" class="form-input" placeholder="admin" value="admin" required autocomplete="username">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="loginPass">رمز عبور:</label>
+                    <input type="password" id="loginPass" class="form-input" placeholder="رمز عبور مدیریت" required autocomplete="current-password">
+                </div>
+
+                <button type="submit" id="btnLoginSubmit" class="btn btn-primary" style="margin-top: 10px;">ورود به سامانه</button>
+            </form>
+
+            <div style="margin-top: 20px;">
+                <a href="/" class="btn btn-outline btn-sm" style="width: 100%;">🎮 بازگشت به صفحه بازی</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- داشبورد اصلی ادمین -->
+    <div id="dashboardView" class="admin-layout" style="display: none;">
+        <!-- هدر -->
+        <header class="admin-header">
+            <div class="brand-section">
+                <span class="brand-icon">⚔️</span>
+                <div>
+                    <span class="brand-title">داشبورد مدیریت و داوری نبرد سلامت</span>
+                    <span class="brand-tag">نسخه شبکه و مدارس</span>
+                </div>
+            </div>
+
+            <div class="header-actions">
+                <a href="/" target="_blank" class="btn btn-outline btn-sm">🎮 مشاهده بازی</a>
+                <button id="btnRefreshAll" class="btn btn-outline btn-sm">🔄 تازه‌سازی داده‌ها</button>
+                <button id="btnLogout" class="btn btn-danger btn-sm">🚪 خروج</button>
+            </div>
+        </header>
+
+        <!-- ناوبری تب‌های داشبورد -->
+        <nav class="dashboard-nav">
+            <button class="nav-tab-btn active" data-tab="tab-overview">📊 آمار و تحلیل مسابقه</button>
+            <button class="nav-tab-btn" data-tab="tab-players">👥 جدول بازیکنان و ویرایش</button>
+            <button class="nav-tab-btn" data-tab="tab-live">📺 پخش زنده مسابقه (ویدئو پروژکتور)</button>
+        </nav>
+
+        <main class="dashboard-container">
+            <!-- تب ۱: آمار کلی -->
+            <section id="tab-overview" class="tab-content">
+                <!-- کارت‌های شاخص‌های کلیدی عملکرد -->
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon-wrap icon-gold">🏆</div>
+                        <div class="stat-meta">
+                            <span class="stat-label">بیشترین رکورد عمر</span>
+                            <span class="stat-value" id="kpiMaxScore">۰ سال</span>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-icon-wrap icon-blue">👨‍🎓</div>
+                        <div class="stat-meta">
+                            <span class="stat-label">بازیکنان ثبت‌نامی</span>
+                            <span class="stat-value" id="kpiRegisteredPlayers">۰</span>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-icon-wrap icon-green">🎮</div>
+                        <div class="stat-meta">
+                            <span class="stat-label">کل بازی‌های انجام‌شده</span>
+                            <span class="stat-value" id="kpiTotalGames">۰</span>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-icon-wrap icon-red">🍎</div>
+                        <div class="stat-meta">
+                            <span class="stat-label">میانگین سال‌های زندگی</span>
+                            <span class="stat-value" id="kpiAvgScore">۰ سال</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ردیف نمودارها -->
+                <div class="analytics-row">
+                    <!-- توزیع مقاطع تحصیلی -->
+                    <div class="panel-card">
+                        <h3 class="panel-title">📚 توزیع شرکت‌کنندگان بر اساس دوره تحصیلی</h3>
+                        
+                        <div class="stage-bar-item">
+                            <div class="stage-bar-header">
+                                <span>ابتدایی</span>
+                                <strong id="cntElementary">۰ نفر (۰٪)</strong>
+                            </div>
+                            <div class="stage-bar-track">
+                                <div id="barElementary" class="stage-bar-fill fill-elementary" style="width: 0%;"></div>
+                            </div>
+                        </div>
+
+                        <div class="stage-bar-item">
+                            <div class="stage-bar-header">
+                                <span>متوسطه اول</span>
+                                <strong id="cntMiddle">۰ نفر (۰٪)</strong>
+                            </div>
+                            <div class="stage-bar-track">
+                                <div id="barMiddle" class="stage-bar-fill fill-middle" style="width: 0%;"></div>
+                            </div>
+                        </div>
+
+                        <div class="stage-bar-item">
+                            <div class="stage-bar-header">
+                                <span>متوسطه دوم</span>
+                                <strong id="cntHigh">۰ نفر (۰٪)</strong>
+                            </div>
+                            <div class="stage-bar-track">
+                                <div id="barHigh" class="stage-bar-fill fill-high" style="width: 0%;"></div>
+                            </div>
+                        </div>
+
+                        <div class="stage-bar-item">
+                            <div class="stage-bar-header">
+                                <span>سایر دوره‌ها</span>
+                                <strong id="cntOther">۰ نفر (۰٪)</strong>
+                            </div>
+                            <div class="stage-bar-track">
+                                <div id="barOther" class="stage-bar-fill fill-other" style="width: 0%;"></div>
+                            </div>
+                        </div>
+
+                        <div class="stage-bar-item">
+                            <div class="stage-bar-header">
+                                <span>کاربران ناشناس</span>
+                                <strong id="cntAnon">۰ نفر (۰٪)</strong>
+                            </div>
+                            <div class="stage-bar-track">
+                                <div id="barAnon" class="stage-bar-fill fill-anon" style="width: 0%;"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- برترین مدارس مشارکت‌کننده -->
+                    <div class="panel-card">
+                        <h3 class="panel-title">🏫 برترین مدارس مشارکت‌کننده</h3>
+                        <div id="topSchoolsList" class="school-rank-list">
+                            <!-- Injected by JS -->
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- تب ۲: لیست بازیکنان و مدیریت -->
+            <section id="tab-players" class="tab-content" style="display: none;">
+                <!-- جعبه فیلتر و جستجو -->
+                <div class="toolbar">
+                    <div class="filter-group">
+                        <div class="search-box">
+                            <input type="text" id="playerSearch" class="search-input" placeholder="جستجوی نام دانش‌آموز یا مدرسه...">
+                            <span class="search-icon">🔍</span>
+                        </div>
+
+                        <select id="filterCategory" class="form-select" style="width: auto;">
+                            <option value="all">همه دوره‌ها</option>
+                            <option value="elementary">ابتدایی</option>
+                            <option value="middle">متوسطه اول</option>
+                            <option value="high">متوسطه دوم</option>
+                            <option value="other">سایر</option>
+                            <option value="anonymous">ناشناس</option>
+                        </select>
+
+                        <select id="filterSort" class="form-select" style="width: auto;">
+                            <option value="best_score">بیشترین رکورد (سال عمر)</option>
+                            <option value="games_count">تعداد بازی</option>
+                            <option value="last_active">آخرین فعالیت</option>
+                            <option value="created_at">جدیدترین عضویت</option>
+                        </select>
+                    </div>
+
+                    <div style="display: flex; gap: 8px;">
+                        <a href="/api/admin/export" id="btnExportCsv" class="btn btn-gold btn-sm">📥 دانلود فایل اکسل (CSV)</a>
+                        <button id="btnResetAllData" class="btn btn-danger btn-sm">⚠️ حذف کل اطلاعات مسابقه</button>
+                    </div>
+                </div>
+
+                <!-- جدول بازیکنان -->
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ردیف</th>
+                                <th>نام و نام خانوادگی</th>
+                                <th>دوره تحصیلی</th>
+                                <th>مدرسه</th>
+                                <th>کلاس</th>
+                                <th>رکورد عمر (سال)</th>
+                                <th>دفعات بازی</th>
+                                <th>نوع</th>
+                                <th>آخرین فعالیت</th>
+                                <th>عملیات</th>
+                            </tr>
+                        </thead>
+                        <tbody id="playersTableBody">
+                            <!-- Injected by JS -->
+                        </tbody>
+                    </table>
+                </div>
+                <div style="display:flex;gap:12px;align-items:center;margin-top:16px;">
+                    <button id="btnPlayersPrev" class="btn btn-outline btn-sm" type="button" disabled>قبلی</button>
+                    <span id="playersPageLabel"></span>
+                    <button id="btnPlayersNext" class="btn btn-outline btn-sm" type="button" disabled>بعدی</button>
+                </div>
+            </section>
+
+            <!-- تب ۳: پخش زنده پروژکتور -->
+            <section id="tab-live" class="tab-content" style="display: none;">
+                <div class="live-wrapper">
+                    <div class="live-header">
+                        <div style="display: flex; align-items: center; gap: 14px;">
+                            <h2 style="font-size: 20px; font-weight: 900; color: var(--gold);">🏆 جدول پخش زنده مسابقه</h2>
+                            <div class="live-indicator">
+                                <span class="pulse-dot"></span>
+                                <span>در حال دریافت لحظه‌ای نتایج</span>
+                            </div>
+                        </div>
+
+                        <div style="display: flex; gap: 10px; align-items: center;">
+                            <select id="liveCategorySelect" class="form-select" style="width: auto; font-size: 13px;">
+                                <option value="all">همه رده‌ها</option>
+                                <option value="elementary">ابتدایی</option>
+                                <option value="middle">متوسطه اول</option>
+                                <option value="high">متوسطه دوم</option>
+                                <option value="other">سایر</option>
+                            </select>
+
+                            <button id="btnToggleFullscreen" class="btn btn-outline btn-sm">⛶ تمام‌صفحه پروژکتور</button>
+                        </div>
+                    </div>
+
+                    <div id="liveGrid" class="live-grid">
+                        <!-- Top 10 cards injected by JS -->
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- دیالوگ ویرایش بازیکن -->
+    <dialog id="editPlayerDialog">
+        <div class="modal-box">
+            <div class="modal-title">
+                <span>✏️ ویرایش مشخصات بازیکن</span>
+                <button type="button" id="btnCancelEditX" style="background:none;border:none;color:#fff;font-size:18px;cursor:pointer;">✕</button>
+            </div>
+
+            <form id="editPlayerForm" onsubmit="return false;">
+                <input type="hidden" id="editPlayerId">
+
+                <div class="form-group">
+                    <label class="form-label" for="editName">نام و نام خانوادگی:</label>
+                    <input type="text" id="editName" class="form-input" required>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="editCategory">دوره تحصیلی:</label>
+                    <select id="editCategory" class="form-select">
+                        <option value="elementary">ابتدایی</option>
+                        <option value="middle">متوسطه اول</option>
+                        <option value="high">متوسطه دوم</option>
+                        <option value="other">سایر</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="editSchool">نام مدرسه:</label>
+                    <input type="text" id="editSchool" class="form-input">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="editClass">کلاس / پایه (فقط برای ابتدایی):</label>
+                    <input type="text" id="editClass" class="form-input">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="editScore">رکورد سال‌های زندگی:</label>
+                    <input type="number" id="editScore" class="form-input" min="0">
+                </div>
+
+                <div class="modal-actions">
+                    <button type="button" id="btnCancelEdit" class="btn btn-outline">انصراف</button>
+                    <button type="submit" id="btnSaveEdit" class="btn btn-primary" style="width: auto;">ذخیره تغییرات</button>
+                </div>
+            </form>
+        </div>
+    </dialog>
+
+    <script>
+        const toFaDigits = (n) => String(n).replace(/\d/g, d => '۰۱۲۳۴۵۶۷۸۹'[d]);
+
+        let liveRefreshTimer = null;
+
+        // بررسی لاگین ادمین
+        async function checkAdminAuth() {
+            try {
+                const res = await fetch('/api/admin/check');
+                const data = await res.json();
+                if (data.authenticated) {
+                    showDashboard();
+                } else {
+                    showLogin();
+                }
+            } catch (e) {
+                showLogin();
+            }
+        }
+
+        function showLogin() {
+            document.getElementById('loginView').style.display = 'flex';
+            document.getElementById('dashboardView').style.display = 'none';
+            if (liveRefreshTimer) clearInterval(liveRefreshTimer);
+        }
+
+        function showDashboard() {
+            document.getElementById('loginView').style.display = 'none';
+            document.getElementById('dashboardView').style.display = 'flex';
+            loadStats();
+            loadPlayers();
+            loadLiveLeaderboard();
+            startLiveTimer();
+        }
+
+        // لاگین
+        document.getElementById('adminLoginForm').addEventListener('submit', async () => {
+            const username = document.getElementById('loginUser').value.trim();
+            const password = document.getElementById('loginPass').value.trim();
+            const alertBox = document.getElementById('loginAlert');
+
+            alertBox.style.display = 'none';
+            try {
+                const res = await fetch('/api/admin/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showDashboard();
+                } else {
+                    alertBox.textContent = data.error || 'نام کاربری یا رمز عبور اشتباه است.';
+                    alertBox.style.display = 'block';
+                }
+            } catch (e) {
+                alertBox.textContent = 'خطا در برقراری ارتباط با سرور.';
+                alertBox.style.display = 'block';
+            }
+        });
+
+        // خروج
+        document.getElementById('btnLogout').addEventListener('click', async () => {
+            await fetch('/api/admin/logout', { method: 'POST' });
+            showLogin();
+        });
+
+        // تغییر تب‌ها
+        document.querySelectorAll('.nav-tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.nav-tab-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+
+                const targetTab = btn.getAttribute('data-tab');
+                document.querySelectorAll('.tab-content').forEach(tc => tc.style.display = 'none');
+                document.getElementById(targetTab).style.display = 'block';
+
+                if (targetTab === 'tab-players') loadPlayers();
+                if (targetTab === 'tab-live') loadLiveLeaderboard();
+            });
+        });
+
+        // بارگذاری آمار
+        async function loadStats() {
+            try {
+                const res = await fetch('/api/admin/stats');
+                const data = await res.json();
+                if (!data.success) return;
+
+                document.getElementById('kpiMaxScore').textContent = `${toFaDigits(data.max_score)} سال`;
+                document.getElementById('kpiRegisteredPlayers').textContent = toFaDigits(data.registered_players);
+                document.getElementById('kpiTotalGames').textContent = toFaDigits(data.total_games);
+                document.getElementById('kpiAvgScore').textContent = `${toFaDigits(data.avg_score)} سال`;
+
+                // توزیع دوره‌ها
+                const total = data.total_players || 1;
+                const counts = data.category_counts || {};
+
+                const setBar = (key, cntId, barId) => {
+                    const cnt = counts[key] || 0;
+                    const pct = Math.round((cnt / total) * 100);
+                    document.getElementById(cntId).textContent = `${toFaDigits(cnt)} نفر (${toFaDigits(pct)}٪)`;
+                    document.getElementById(barId).style.width = `${pct}%`;
+                };
+
+                setBar('elementary', 'cntElementary', 'barElementary');
+                setBar('middle', 'cntMiddle', 'barMiddle');
+                setBar('high', 'cntHigh', 'barHigh');
+                setBar('other', 'cntOther', 'barOther');
+                setBar('anonymous', 'cntAnon', 'barAnon');
+
+                // لیست مدارس برتر
+                const schoolsList = document.getElementById('topSchoolsList');
+                schoolsList.innerHTML = '';
+                if (!data.top_schools || data.top_schools.length === 0) {
+                    schoolsList.innerHTML = '<div style="color:var(--text-muted);font-size:13px;text-align:center;padding:14px;">هنوز اطلاعات مدرسه‌ای ثبت نشده است.</div>';
+                } else {
+                    data.top_schools.forEach((s, idx) => {
+                        const item = document.createElement('div');
+                        item.className = 'school-rank-item';
+                        item.innerHTML = `
+                            <div>
+                                <strong>${toFaDigits(idx + 1)}. ${escapeHtml(s.school)}</strong>
+                                <span style="font-size:11px;color:var(--text-muted);margin-right:8px;">${toFaDigits(s.count)} دانش‌آموز</span>
+                            </div>
+                            <span style="color:var(--gold);font-weight:800;">رکورد: ${toFaDigits(s.top_score)} سال</span>
+                        `;
+                        schoolsList.appendChild(item);
+                    });
+                }
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        // بارگذاری بازیکنان
+        const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'}[char]));
+        let playersPage = 1;
+        let playersTotal = 0;
+        function updatePlayersPager() {
+            document.getElementById('playersPageLabel').textContent = `صفحه ${toFaDigits(playersPage)} از ${toFaDigits(Math.max(1, Math.ceil(playersTotal / 100)))}`;
+            document.getElementById('btnPlayersPrev').disabled = playersPage <= 1;
+            document.getElementById('btnPlayersNext').disabled = playersPage * 100 >= playersTotal;
+        }
+        async function loadPlayers(keepPage = false) {
+            if (keepPage !== true) playersPage = 1;
+            const search = document.getElementById('playerSearch').value.trim();
+            const cat = document.getElementById('filterCategory').value;
+            const sort = document.getElementById('filterSort').value;
+
+            const tbody = document.getElementById('playersTableBody');
+            tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;padding:20px;color:var(--text-muted);">در حال دریافت اطلاعات بازیکنان...</td></tr>';
+
+            try {
+                const res = await fetch(`/api/admin/players?category=${encodeURIComponent(cat)}&search=${encodeURIComponent(search)}&sort_by=${encodeURIComponent(sort)}&page=${playersPage}`);
+                const data = await res.json();
+                if (!data.success) return;
+
+                playersTotal = data.total;
+                updatePlayersPager();
+                tbody.innerHTML = '';
+                if (data.players.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;padding:24px;color:var(--text-muted);">هیچ بازیکنی با این مشخصات یافت نشد.</td></tr>';
+                    return;
+                }
+
+                data.players.forEach((p, idx) => {
+                    const tr = document.createElement('tr');
+                    const badgeClass = `badge-cat cat-${escapeHtml(p.category)}`;
+                    const typeLabel = p.is_anonymous ? '<span class="badge-cat cat-anonymous">ناشناس</span>' : '<span class="badge-cat cat-elementary">عضو</span>';
+
+                    tr.innerHTML = `
+                        <td>${toFaDigits((playersPage - 1) * 100 + idx + 1)}</td>
+                        <td><strong>${escapeHtml(p.name)}</strong></td>
+                        <td><span class="${badgeClass}">${escapeHtml(p.category_fa)}</span></td>
+                        <td>${escapeHtml(p.school || '-')}</td>
+                        <td>${escapeHtml(p.grade_class || '-')}</td>
+                        <td><span class="score-pill">${toFaDigits(p.best_score)} سال</span></td>
+                        <td>${toFaDigits(p.games_count)}</td>
+                        <td>${typeLabel}</td>
+                        <td style="font-size:11.5px;color:var(--text-muted);">${escapeHtml(p.last_active)}</td>
+                        <td>
+                            <div style="display:flex;gap:6px;">
+                                <button class="btn btn-outline btn-sm" data-action="edit" title="ویرایش">✏️</button>
+                                <button class="btn btn-outline btn-sm" onclick="resetPlayerScore(${p.id})" title="صفر کردن رکورد">🔄</button>
+                                <button class="btn btn-danger btn-sm" onclick="deletePlayer(${p.id})" title="حذف">🗑️</button>
+                            </div>
+                        </td>
+                    `;
+                    tr.querySelector('[data-action="edit"]').addEventListener('click', () => openEditModal(p));
+                    tbody.appendChild(tr);
+                });
+            } catch (e) {
+                tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;padding:20px;color:var(--danger);">خطا در دریافت لیست بازیکنان</td></tr>';
+            }
+        }
+
+        document.getElementById('btnPlayersPrev').addEventListener('click', () => { playersPage--; loadPlayers(true); });
+        document.getElementById('btnPlayersNext').addEventListener('click', () => { playersPage++; loadPlayers(true); });
+        // جستجو و فیلتر
+        let searchTimeout;
+        document.getElementById('playerSearch').addEventListener('input', () => {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(loadPlayers, 300);
+        });
+        document.getElementById('filterCategory').addEventListener('change', loadPlayers);
+        document.getElementById('filterSort').addEventListener('change', loadPlayers);
+
+        // بروزرسانی دستی
+        document.getElementById('btnRefreshAll').addEventListener('click', () => {
+            loadStats();
+            loadPlayers();
+            loadLiveLeaderboard();
+        });
+
+        // بارگذاری لیدربرد زنده پروژکتور
+        async function loadLiveLeaderboard() {
+            const cat = document.getElementById('liveCategorySelect').value;
+            const container = document.getElementById('liveGrid');
+
+            try {
+                const res = await fetch(`/api/leaderboard?category=${encodeURIComponent(cat)}`);
+                const data = await res.json();
+                if (!data.success) return;
+
+                container.innerHTML = '';
+                if (!data.top_players || data.top_players.length === 0) {
+                    container.innerHTML = '<div style="grid-column: 1/-1; text-align:center; padding:40px; color:var(--text-muted); font-size:16px;">هنوز رکوردی در این رده برای نمایش در پروژکتور ثبت نشده است.</div>';
+                    return;
+                }
+
+                data.top_players.forEach(p => {
+                    const card = document.createElement('div');
+                    let rankClass = `live-card rank-${p.rank}`;
+                    let medal = toFaDigits(p.rank);
+                    if (p.rank === 1) medal = '🥇 ۱';
+                    else if (p.rank === 2) medal = '🥈 ۲';
+                    else if (p.rank === 3) medal = '🥉 ۳';
+
+                    let sub = p.category_fa;
+                    if (p.school) sub += ` · ${p.school}`;
+                    if (p.grade_class) sub += ` (${p.grade_class})`;
+
+                    card.className = rankClass;
+                    card.innerHTML = `
+                        <div class="live-rank-num">${medal}</div>
+                        <div class="live-player-info">
+                            <div class="live-player-name">${escapeHtml(p.name)}</div>
+                            <div class="live-player-sub">${escapeHtml(sub)}</div>
+                        </div>
+                        <div class="live-score">${toFaDigits(p.best_score)}<span>سال زندگی</span></div>
+                    `;
+                    container.appendChild(card);
+                });
+            } catch (e) {
+                console.warn(e);
+            }
+        }
+
+        document.getElementById('liveCategorySelect').addEventListener('change', loadLiveLeaderboard);
+
+        function startLiveTimer() {
+            if (liveRefreshTimer) clearInterval(liveRefreshTimer);
+            liveRefreshTimer = setInterval(() => {
+                const activeTab = document.querySelector('.nav-tab-btn.active')?.getAttribute('data-tab');
+                if (activeTab === 'tab-live') {
+                    loadLiveLeaderboard();
+                }
+            }, 5000);
+        }
+
+        // تمام‌صفحه پروژکتور
+        document.getElementById('btnToggleFullscreen').addEventListener('click', () => {
+            const elem = document.querySelector('.live-wrapper');
+            if (!document.fullscreenElement) {
+                elem.requestFullscreen().catch(() => {});
+            } else {
+                document.exitFullscreen().catch(() => {});
+            }
+        });
+
+        // عملیات حذف بازیکن
+        async function deletePlayer(id) {
+            if (!confirm('آیا از حذف این بازیکن اطمینان دارید؟ تمامی رکوردهای او پاک خواهند شد.')) return;
+            const res = await fetch('/api/admin/players/delete', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ player_id: id })
+            });
+            const data = await res.json();
+            if (data.success) {
+                loadPlayers();
+                loadStats();
+                loadLiveLeaderboard();
+            } else {
+                alert('خطا در حذف بازیکن.');
+            }
+        }
+
+        // صفر کردن رکورد بازیکن
+        async function resetPlayerScore(id) {
+            if (!confirm('آیا رکورد این بازیکن صفر شود؟')) return;
+            const res = await fetch('/api/admin/players/reset-score', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ player_id: id })
+            });
+            const data = await res.json();
+            if (data.success) {
+                loadPlayers();
+                loadStats();
+                loadLiveLeaderboard();
+            }
+        }
+
+        // بازنشانی کل دیتابیس
+        document.getElementById('btnResetAllData').addEventListener('click', async () => {
+            if (!confirm('⚠️ اخطار بسیار مهم:\nآیا مطمئنید می‌خواهید تمام داده‌های مسابقه و کلیه رکوردهای بازیکنان را پاک کنید؟')) return;
+            if (!confirm('تأیید نهایی: این عملیات غیرقابل بازگشت است! ادامه می‌دهید؟')) return;
+
+            const res = await fetch('/api/admin/reset-all', { method: 'POST' });
+            const data = await res.json();
+            if (data.success) {
+                alert('تمام داده‌ها با موفقیت پاک شدند.');
+                loadStats();
+                loadPlayers();
+                loadLiveLeaderboard();
+            }
+        });
+
+        // مودال ویرایش بازیکن
+        const editDialog = document.getElementById('editPlayerDialog');
+
+        window.openEditModal = function(player) {
+            document.getElementById('editPlayerId').value = player.id;
+            document.getElementById('editName').value = player.name;
+            document.getElementById('editCategory').value = player.category;
+            document.getElementById('editSchool').value = player.school;
+            document.getElementById('editClass').value = player.grade_class;
+            document.getElementById('editScore').value = player.best_score;
+            editDialog.showModal();
+        };
+
+        const closeEdit = () => editDialog.close();
+        document.getElementById('btnCancelEdit').addEventListener('click', closeEdit);
+        document.getElementById('btnCancelEditX').addEventListener('click', closeEdit);
+
+        document.getElementById('editPlayerForm').addEventListener('submit', async () => {
+            const id = document.getElementById('editPlayerId').value;
+            const name = document.getElementById('editName').value.trim();
+            const category = document.getElementById('editCategory').value;
+            const school = document.getElementById('editSchool').value.trim();
+            const grade_class = document.getElementById('editClass').value.trim();
+            const best_score = document.getElementById('editScore').value;
+
+            const res = await fetch('/api/admin/players/update', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ player_id: id, name, category, school, grade_class, best_score })
+            });
+            const data = await res.json();
+            if (data.success) {
+                editDialog.close();
+                loadPlayers();
+                loadStats();
+                loadLiveLeaderboard();
+            } else {
+                alert('خطا در ذخیره تغییرات.');
+            }
+        });
+
+        // بررسی وضعیت در شروع
+        checkAdminAuth();
+    </script>
+</body>
+</html>
