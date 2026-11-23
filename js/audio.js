@@ -187,7 +187,7 @@ class SoundManager {
         osc.stop(startTime + 0.2);
     }
 
-    // صدای کومبوی متوالی (کومبو ۲، ۳، ۴ و بیشتر)
+    // صدای کمبوی برش چند غذا در یک حرکت
     playCombo(count) {
         if (!this.enabled) return;
         this.ensureContext();

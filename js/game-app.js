@@ -742,7 +742,7 @@ class SoundManager {
         osc.stop(startTime + 0.2);
     }
 
-    // صدای کومبوی متوالی (کومبو ۲، ۳، ۴ و بیشتر)
+    // صدای کمبوی برش چند غذا در یک حرکت
     playCombo(count) {
         if (!this.enabled) return;
         this.ensureContext();
@@ -1619,7 +1619,7 @@ class GameEngine {
         this.particles.createJuiceSplash(food.x, food.y, food.data.splashColors, sliceAngle, 16);
         this.healthyCuts++;
         const now = performance.now();
-        if (!this.isPointerDown || (this.lastComboCutTime !== null && now - this.lastComboCutTime >= 300)) {
+        if (!this.isPointerDown || (this.lastComboCutTime !== null && now - this.lastComboCutTime >= 400)) {
             this.resetCombo();
         }
         if (this.isPointerDown) {
@@ -1635,7 +1635,7 @@ class GameEngine {
             this.bonusYears += bonus;
             sounds.playCombo(this.activeCombo);
             this.particles.addFloatingText(this.width / 2, this.height * 0.4,
-                `کومبو ×${toPersianDigits(this.activeCombo)}! +${toPersianDigits(bonus)} سال`, '#ffca28', 28, true);
+                `کمبوی یک حرکت! +${toPersianDigits(bonus)} سال`, '#ffca28', 28, true);
         }
         this.particles.addFloatingText(food.x, food.y, '+۱ سال', '#81c784', 24);
         this.ui.updateScore(this.score);
@@ -1893,7 +1893,7 @@ class GameEngine {
 
         // پاکسازی مسیر قدیمی رد شمشیر
         const now = performance.now();
-        if (this.lastComboCutTime !== null && now - this.lastComboCutTime >= 300) this.resetCombo();
+        if (this.lastComboCutTime !== null && now - this.lastComboCutTime >= 400) this.resetCombo();
         this.bladeTrail = this.bladeTrail.filter(p => now - p.time < 170);
 
         // بروزرسانی غذاهای در حال پرواز
@@ -1907,7 +1907,6 @@ class GameEngine {
 
             // اگر غذا سقوط کرد و از پایین صفحه خارج شد
             if (f.y > this.height + f.height + 50 && f.vy > 0) {
-                // اگر غذای سالم بود و از دست رفت، کومبو می‌شکند
 
                 this.foods.splice(i, 1);
             }
@@ -2717,7 +2716,7 @@ document.addEventListener('DOMContentLoaded', () => {
             renderHearts(5, 5);
             clearTimeout(toastTimeout);
             healthToast.classList.remove('visible', 'warning-toast');
-            showToast('🌱 زندگی تازه: ۱۰ سال', 'هر غذای سالم +۱ سال؛ زنجیره سالم بساز و بیشتر زندگی کن!');
+            showToast('🌱 زندگی تازه: ۱۰ سال', 'هر غذای سالم +۱ سال؛ برای کمبو، چند غذای سالم را در یک حرکت سریع برش بزن!');
         },
         onGamePause: () => {
             pauseDialog.showModal();

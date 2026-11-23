@@ -83,18 +83,18 @@ assert.equal(game.highScore, 30);
 // delayed animation frame cannot keep an expired chain alive.
 game.isPointerDown = true;
 cutGood();
-now += 299; cutGood();
-now += 299; cutGood();
+now += 399; cutGood();
+now += 399; cutGood();
 assert.equal(game.activeCombo, 3);
-assert.equal(game.bonusYears, 1, '299ms gaps qualify even when the whole swipe exceeds 300ms');
-now += 300; cutGood();
-assert.equal(game.activeCombo, 1, 'exactly 300ms breaks the chain');
+assert.equal(game.bonusYears, 1, '399ms gaps qualify even when the whole swipe exceeds 400ms');
+now += 400; cutGood();
+assert.equal(game.activeCombo, 1, 'exactly 400ms breaks the chain');
 assert.equal(game.bonusYears, 1);
-now += 301; cutGood();
-assert.equal(game.activeCombo, 1, 'more than 300ms also breaks the chain');
+now += 401; cutGood();
+assert.equal(game.activeCombo, 1, 'more than 400ms also breaks the chain');
 cutGood(); cutGood();
 assert.equal(game.bonusYears, 2, 'multiple fruit hit in one frame qualify');
-now += 300;
+now += 400;
 game.update(0);
 assert.equal(game.activeCombo, 0, 'expired chains reset even without another cut');
 game.isPointerDown = false;
@@ -181,7 +181,7 @@ for (const [width, height] of [[320, 568], [360, 800], [390, 844], [430, 932], [
     }
 }
 game.spawnWave = originalSpawnWave;
-console.log('Passed: same-swipe combo rewards, strict 300ms boundary, idle expiry, penalties, final accounting, pause and restart.');
+console.log('Passed: same-swipe combo rewards, strict 400ms boundary, idle expiry, penalties, final accounting, pause and restart.');
 console.log('Passed: gradual flight-speed ramp and cap, portrait/landscape trajectories, reaction time, safe bounds and 30/60/120Hz motion.');
 
 // A blank cached background (for example after GPU eviction) must still erase

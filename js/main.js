@@ -540,7 +540,7 @@ document.addEventListener('DOMContentLoaded', () => {
             renderHearts(5, 5);
             clearTimeout(toastTimeout);
             healthToast.classList.remove('visible', 'warning-toast');
-            showToast('🌱 زندگی تازه: ۱۰ سال', 'هر غذای سالم +۱ سال؛ زنجیره سالم بساز و بیشتر زندگی کن!');
+            showToast('🌱 زندگی تازه: ۱۰ سال', 'هر غذای سالم +۱ سال؛ برای کمبو، چند غذای سالم را در یک حرکت سریع برش بزن!');
         },
         onGamePause: () => {
             pauseDialog.showModal();
